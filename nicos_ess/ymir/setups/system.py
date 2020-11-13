@@ -45,33 +45,41 @@ devices = dict(
                  minfree=5,
                  ),
 
-    det=device('nicos_ess.devices.datasources.just_bin_it.JustBinItDetector',
-               description='The just-bin-it histogrammer', hist_topic='nicos1',
-               data_topic='event_data', brokers=['172.30.242.20:9092'],
-               unit='evts', command_topic='hist_commands',
-               response_topic='hist_responses'),
+    # det=device('nicos_ess.devices.datasources.just_bin_it.JustBinItDetector',
+    #            description='The just-bin-it histogrammer', hist_topic='nicos1',
+    #            data_topic='event_data', brokers=['172.30.242.20:9092'],
+    #            unit='evts', command_topic='hist_commands',
+    #            response_topic='hist_responses'),
 
     jbi_liveview=device('nicos.devices.datasinks.LiveViewSink', ),
 
-    NexusDataSink=device(
-        'nicos_ess.devices.datasinks.nexussink.NexusFileWriterSink',
-        description='Sink for NeXus file writer (kafka-to-nexus)',
-        brokers=['172.30.242.20:9092'],
-        cmdtopic='UTGARD_writerCommand',
-        status_provider='NexusFileWriter',
-        templatesmodule='nicos_ess.ymir.nexus.nexus_templates',
-        templatename='ymir_default'
-    ),
+    # NexusDataSink=device(
+    #     'nicos_ess.devices.datasinks.nexussink.NexusFileWriterSink',
+    #     description='Sink for NeXus file writer (kafka-to-nexus)',
+    #     brokers=['172.30.242.20:9092'],
+    #     cmdtopic='UTGARD_writerCommand',
+    #     status_provider='NexusFileWriter',
+    #     templatesmodule='nicos_ess.ymir.nexus.nexus_templates',
+    #     templatename='ymir_default'
+    # ),
 
-    NexusFileWriter=device(
-        'nicos_ess.devices.datasinks.nexussink.NexusFileWriterStatus',
-        description='Status for nexus file writing',
-        brokers=['172.30.242.20:9092'],
-        statustopic='UTGARD_writerStatus',
-    ),
+    # NexusFileWriter=device(
+    #     'nicos_ess.devices.datasinks.nexussink.NexusFileWriterStatus',
+    #     description='Status for nexus file writing',
+    #     brokers=['172.30.242.20:9092'],
+    #     statustopic='UTGARD_writerStatus',
+    # ),
+
+    FileWriter=device(
+        'nicos_ess.devices.datasinks.file_writer.FileWriterStatus',
+        description='Status for file-writer',
+        broker=['127.0.0.1:9092'],
+        statustopic='UTGARD_writerCommandStatus',
+        unit='',
+    )
 
 )
 
-startupcode = '''
-SetDetectors(det)
-'''
+# startupcode = '''
+# SetDetectors(det)
+# '''
