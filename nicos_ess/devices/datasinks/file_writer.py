@@ -5,6 +5,10 @@ from nicos.core import Readable, tupleof, Param, POLLER, status, MASTER
 from nicos import session
 from nicos.core.constants import SIMULATION
 
+from streaming_data_types import deserialise_x5f2
+
+import json
+
 
 class FileWriterStatus(KafkaSubscriber, Readable):
 
@@ -46,12 +50,19 @@ class FileWriterStatus(KafkaSubscriber, Readable):
         return self.curstatus
 
     def new_messages_callback(self, messages):
-        self.log.warn('message received.')
+        key = max(messages.keys())
+        result = deserialise_x5f2(messages[key])
+        _status = json.loads(result.status_json)
+        if _status['state'] == 'idle':
+            self.curstatus = status.OK, _status['state']
+        else:
+            self.curstatus = status.BUSY, _status['state']
 
     def no_messages_callback(self):
         # Check if the process is still running
-        if self._mode == MASTER and not self.is_process_running():
-            self._setROParam('curstatus', (status.ERROR, 'Disconnected'))
+        # if self._mode == MASTER and not self.is_process_running():
+        #     self._setROParam('curstatus', (status.ERROR, 'Disconnected'))
+        pass
 
     def is_process_running(self):
         # Allow some leeway in case of message lag.
