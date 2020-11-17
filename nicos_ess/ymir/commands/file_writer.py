@@ -8,8 +8,8 @@ import time
 import os
 
 
-def _prepare_write_job(host, config, start_time):
-    command_channel = WorkerCommandChannel(f'{host}/command_topic')
+def _prepare_write_job(host, topic, config, start_time):
+    command_channel = WorkerCommandChannel(f'{host}/{topic}')
     job_handler = JobHandler(worker_finder=command_channel)
     with open(config, "r") as f:
         nexus_structure = f.read()
@@ -24,7 +24,7 @@ def _prepare_write_job(host, config, start_time):
 
 @usercommand
 @helparglist(['kafka_host', 'nxs_config'])
-def start_writing(kafka_host="dmsc-kafka01:9092", nxs_config=None):
+def start_writing(kafka_host="dmsc-kafka01:9092", topic='', nxs_config=None):
 
     if nxs_config is None:
         # This path will most likely will change. It should be more
@@ -34,8 +34,11 @@ def start_writing(kafka_host="dmsc-kafka01:9092", nxs_config=None):
     else:
         config = nxs_config
 
+    if topic == '':
+        raise ValueError('Please provide a valid topic.')
+
     _time = datetime.now()
-    handler, job = _prepare_write_job(kafka_host, config, _time)
+    handler, job = _prepare_write_job(kafka_host, topic, config, _time)
 
     print("Starting write job")
     start_handler = handler.start_job(job)
