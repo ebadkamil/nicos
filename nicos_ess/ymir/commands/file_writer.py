@@ -24,7 +24,8 @@ def _prepare_write_job(host, topic, config, start_time):
 
 @usercommand
 @helparglist(['kafka_host', 'nxs_config'])
-def start_writing(kafka_host="dmsc-kafka01:9092", topic='', nxs_config=None):
+def start_writing(kafka_host='dmsc-kafka01:9092', topic='UTGARD_writerCommand',
+                  nxs_config=None):
 
     if nxs_config is None:
         # This path will most likely will change. It should be more
