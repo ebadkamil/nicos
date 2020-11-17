@@ -98,28 +98,30 @@ def _prepare_write_job(host, topic, config, start_time):
 @helparglist(['kafka_host', 'nxs_config'])
 def start_writing(kafka_host='dmsc-kafka01:9092', topic='UTGARD_writerCommand',
                   nxs_config=None):
-    start_time = datetime.now()
-    kafka_host = "172.30.242.20:9092"
-    command_channel = WorkerCommandChannel(
-        "{}/UTGARD_writerCommand".format(kafka_host))
-    job_handler = JobHandler(worker_finder=command_channel)
 
-    write_job = WriteJob(
-        nexus_structure,
-        "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(start_time),
-        kafka_host,
-        start_time,
-    )
+    if nxs_config is None:
+        # This path will most likely will change. It should be more
+        # general anyway.
+        config = os.path.join(os.getcwd(),
+                              'nicos_ess/ymir/commands/nexus_config.json')
+    else:
+        config = nxs_config
+
+    if topic == '':
+        raise ValueError('Please provide a valid topic.')
+
+    _time = datetime.now()
+    handler, job = _prepare_write_job(kafka_host, topic, config, _time)
 
     print("Starting write job")
-    start_handler = job_handler.start_job(write_job)
+    start_handler = handler.start_job(job)
     while not start_handler.is_done():
         time.sleep(1)
-    stop_time = start_time + timedelta(seconds=60)
-    stop_handler = job_handler.set_stop_time(stop_time)
+    stop_time = _time + timedelta(seconds=60)
+    stop_handler = handler.set_stop_time(stop_time)
     while not stop_handler.is_done():
         time.sleep(1)
-    while not job_handler.is_done():
+    while not handler.is_done():
         time.sleep(1)
     print("Write job is done")
 
