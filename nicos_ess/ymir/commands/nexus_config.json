@@ -9,7 +9,21 @@
       "children": [
         {
           "type": "group",
-          "name": "axis_position",
+          "name": "m1_RBV",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "Ymir_motion",
+                "source": "SES-SCAN:MC-MCU-001:m1.RBV",
+                "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "name": "m2_RBV",
           "children": [
             {
               "type": "stream",
@@ -17,6 +31,34 @@
                 "topic": "Ymir_motion",
                 "source": "SES-SCAN:MC-MCU-001:m2.RBV",
                 "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "name": "m3_RBV",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "Ymir_motion",
+                "source": "SES-SCAN:MC-MCU-001:m3.RBV",
+                "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "name": "freia_events",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "FREIA_detector",
+                "source": "multiblade",
+                "writer_module": "ev42"
               }
             }
           ]
