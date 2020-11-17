@@ -8,14 +8,85 @@ import time
 import os
 import json
 
+nexus_structure = json.dumps({
+  "children": [
+    {
+      "type": "group",
+      "name": "entry-01",
+      "attributes": {
+        "NX_class": "NXentry"
+      },
+      "children": [
+        {
+          "type": "group",
+          "name": "m1_RBV",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "Ymir_motion",
+                "source": "SES-SCAN:MC-MCU-001:m1.RBV",
+                "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "name": "m2_RBV",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "Ymir_motion",
+                "source": "SES-SCAN:MC-MCU-001:m2.RBV",
+                "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "name": "m3_RBV",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "Ymir_motion",
+                "source": "SES-SCAN:MC-MCU-001:m3.RBV",
+                "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "name": "freia_events",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "FREIA_detector",
+                "source": "multiblade",
+                "writer_module": "ev42"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+)
+
 
 def _prepare_write_job(host, topic, config, start_time):
     command_channel = WorkerCommandChannel(f'{host}/{topic}')
     job_handler = JobHandler(worker_finder=command_channel)
-    with open(config, "r") as f:
-        nexus_structure = f.read()
+    # with open(config, "r") as f:
+    #     nexus_structure = f.read()
     write_job = WriteJob(
-        json.dumps(nexus_structure),
+        nexus_structure,
         "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(start_time),
         host,
         start_time,
