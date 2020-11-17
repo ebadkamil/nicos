@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 import time
 import os
+import json
 
 
 def _prepare_write_job(host, topic, config, start_time):
@@ -14,7 +15,7 @@ def _prepare_write_job(host, topic, config, start_time):
     with open(config, "r") as f:
         nexus_structure = f.read()
     write_job = WriteJob(
-        nexus_structure,
+        json.dumps(nexus_structure),
         "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(start_time),
         host,
         start_time,
