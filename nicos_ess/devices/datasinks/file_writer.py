@@ -51,13 +51,13 @@ class FileWriterStatus(KafkaSubscriber, Readable):
 
     def new_messages_callback(self, messages):
         key = max(messages.keys())
-        # TODO: check it is x5f2
-        result = deserialise_x5f2(messages[key])
-        _status = json.loads(result.status_json)
-        if _status['state'] == 'idle':
-            self.curstatus = status.OK, _status['state']
-        else:
-            self.curstatus = status.BUSY, _status['state']
+        if messages[key][4:8] == b"x5f2":
+            result = deserialise_x5f2(messages[key])
+            _status = json.loads(result.status_json)
+            if _status['state'] == 'idle':
+                self.curstatus = status.OK, _status['state']
+            else:
+                self.curstatus = status.BUSY, _status['state']
 
     def no_messages_callback(self):
         # Check if the process is still running
