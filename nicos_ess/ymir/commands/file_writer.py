@@ -7,7 +7,7 @@ class SetGetHandler:
     """
     An auxiliary class for setting and getting the file writer handler
     object. This class is needed as the corresponding class of starting a write
-    job should instantiate only once.
+    job should be instantiated only once.
     """
     def __init__(self):
         self.handler = None
@@ -19,8 +19,8 @@ class SetGetHandler:
         return self.handler
 
 
-# Global initialisation is required to not to override the handler value
-# one initiated via a write call.
+# Global initialisation is required to not to override the handler value via a
+# stop write job call.
 sg_handler = SetGetHandler()
 
 

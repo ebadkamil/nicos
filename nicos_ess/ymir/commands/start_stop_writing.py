@@ -31,13 +31,14 @@ class StartFileWriter:
         )
         start_handler = self.job_handler.start_job(self.write_job)
         self.job_id = self.write_job.job_id
-        print(self.job_id)
-        print(self.write_job)
         while not start_handler.is_done():
             time.sleep(1)
 
     def get_handler(self):
         return self.job_handler
+
+    def get_job_id(self):
+        return self.job_id
 
 
 class StopFileWriter:
