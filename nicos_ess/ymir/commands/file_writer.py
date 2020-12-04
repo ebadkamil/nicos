@@ -30,10 +30,8 @@ def start_writing():
     writer.start_job()
     # Set the handler which is to be used to stop the write job.
     sg_handler.set_handler(writer.get_handler())
-    print('Write job is started.')
 
 
 @usercommand
 def stop_writing():
     StopFileWriter(sg_handler.get_handler()).stop_job()
-    print('Write job is stopped.')

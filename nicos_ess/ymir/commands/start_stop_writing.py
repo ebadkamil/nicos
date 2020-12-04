@@ -4,10 +4,14 @@ from file_writer_control.WriteJob import WriteJob
 from file_writer_control.JobHandler import JobHandler
 from datetime import datetime
 
-import time
+from nicos_ess.utilities.managers import wait_until_true
 
 
 class StartFileWriter:
+    """
+    The class for starting a write job in ESS File Writer (FW).
+    It assumes a corresponding Kafka broker is up and running along with FW.
+    """
     def __init__(self):
 
         self.device = session.getDevice('FileWriterParameters')
@@ -31,8 +35,8 @@ class StartFileWriter:
         )
         start_handler = self.job_handler.start_job(self.write_job)
         self.job_id = self.write_job.job_id
-        while not start_handler.is_done():
-            time.sleep(1)
+        wait_until_true([start_handler.is_done()])
+        session.log.info('Write job is started.')
 
     def get_handler(self):
         return self.job_handler
@@ -42,12 +46,15 @@ class StartFileWriter:
 
 
 class StopFileWriter:
+    """
+    The class to stop an ongoing write job specified with the corresponding
+    write-job handler.
+    """
     def __init__(self, handler):
         self.job_handler = handler
 
     def stop_job(self):
         stop_handler = self.job_handler.stop_now()
-        while not stop_handler.is_done():
-            time.sleep(1)
-        while not self.job_handler.is_done():
-            time.sleep(1)
+        wait_until_true([stop_handler.is_done(),
+                        self.job_handler.is_done()])
+        session.log.info('Write job is stopped.')
