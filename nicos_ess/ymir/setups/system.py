@@ -67,6 +67,7 @@ devices = dict(
         broker=['192.168.0.36:9092'],
         command_topic='UTGARD_writerCommandStatus',
         nexus_config_path='nicos_ess/ymir/commands/nexus_config.json',
+        lowlevel=True,
     ),
 
 )
