@@ -7,19 +7,23 @@ from datetime import datetime
 from nicos_ess.utilities.managers import wait_until_true
 
 
-class StartFileWriter:
+class WriterBase:
+    def __init__(self):
+        self.device = session.getDevice('FileWriterParameters')
+        self.host = self.device.broker[0]
+        self.config = self.device.nexus_config_path
+        self.topic = self.device.command_topic
+        self.command_channel = WorkerCommandChannel(f'{self.host}/{self.topic}')
+
+
+class StartFileWriter(WriterBase):
     """
     The class for starting a write job in ESS File Writer (FW).
     It assumes a corresponding Kafka broker is up and running along with FW.
     """
     def __init__(self):
+        super().__init__()
 
-        self.device = session.getDevice('FileWriterParameters')
-        self.host = self.device.broker[0]
-        self.config = self.device.nexus_config_path
-        self.topic = self.device.command_topic
-
-        self.command_channel = WorkerCommandChannel(f'{self.host}/{self.topic}')
         self.job_handler = JobHandler(worker_finder=self.command_channel)
         self.write_job = None
         self.job_id = None
@@ -45,19 +49,16 @@ class StartFileWriter:
         return self.job_id
 
 
-class StopFileWriter:
+class StopFileWriter(WriterBase):
     """
     The class to stop an ongoing write job specified with the corresponding
     write-job handler. The class does not inherit from StartFileWriter
     to prevent any false initiations of write job.
     """
     def __init__(self, handler, _id):
-        self.device = session.getDevice('FileWriterParameters')
+        super().__init__()
         self.job_handler = handler
         self.id = _id
-        self.topic = self.device.command_topic
-        self.host = self.device.broker[0]
-        self.command_channel = WorkerCommandChannel(f'{self.host}/{self.topic}')
 
     def stop_job(self):
         stop_handler = self.job_handler.stop_now()
