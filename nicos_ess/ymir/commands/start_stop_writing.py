@@ -48,13 +48,22 @@ class StartFileWriter:
 class StopFileWriter:
     """
     The class to stop an ongoing write job specified with the corresponding
-    write-job handler.
+    write-job handler. The class does not inherit from StartFileWriter
+    to prevent any false initiations of write job.
     """
-    def __init__(self, handler):
+    def __init__(self, handler, _id):
+        self.device = session.getDevice('FileWriterParameters')
         self.job_handler = handler
+        self.id = _id
+        self.topic = self.device.command_topic
+        self.host = self.device.broker[0]
+        self.command_channel = WorkerCommandChannel(f'{self.host}/{self.topic}')
 
     def stop_job(self):
         stop_handler = self.job_handler.stop_now()
         wait_until_true([stop_handler.is_done(),
                         self.job_handler.is_done()])
         session.log.info('Write job is stopped.')
+
+    def get_status(self):
+        return self.command_channel.get_job_status(self.id)
