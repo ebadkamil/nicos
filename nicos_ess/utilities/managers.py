@@ -31,3 +31,8 @@ def wait_until_true(conditions, max_call_count=61, sleep_duration=1):
             time.sleep(sleep_duration)
             call_count += 1
     yield
+
+
+def wait(wait_time=1):
+    time.sleep(wait_time)
+    yield
