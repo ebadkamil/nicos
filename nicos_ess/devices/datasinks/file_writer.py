@@ -54,17 +54,21 @@ class FileWriterStatus(KafkaSubscriber, Readable):
         if messages[key][4:8] == b"x5f2":
             result = deserialise_x5f2(messages[key])
             _status = json.loads(result.status_json)
+            self._setROParam(
+                'statusinterval', result.update_interval // 1000
+            )
             if _status['state'] == 'idle':
                 self.curstatus = status.OK, _status['state']
             else:
                 self.curstatus = status.BUSY, _status['state']
+            next_update = currenttime() + self.statusinterval
+            if next_update > self.nextupdate:
+                self._setROParam('nextupdate', next_update)
 
     def no_messages_callback(self):
         # Check if the process is still running
-        # if self._mode == MASTER and not self.is_process_running():
-        #     self._setROParam('curstatus', (status.ERROR, 'Disconnected'))
-        # TODO: not urgent but make it work like status_handler.py
-        pass
+        if self._mode == MASTER and not self.is_process_running():
+            self._setROParam('curstatus', (status.ERROR, 'Disconnected'))
 
     def is_process_running(self):
         # Allow some leeway in case of message lag.
