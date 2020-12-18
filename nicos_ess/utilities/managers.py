@@ -1,4 +1,5 @@
 import time
+from contextlib import contextmanager
 from typing import List
 
 
@@ -12,6 +13,10 @@ def wait_until_true(conditions, max_call_count=61, sleep_duration=1):
 
     Note that with the current implementation, the conditions are evaluated
     serially. A parallel implementation can be done, if needed.
+
+    This generator should not be confused with a proper context manager which
+    can only yield once. Thus decorating this generator as a context
+    manager shall fail.
     """
     if not isinstance(conditions, List):
         raise TypeError('The argument should be a list.')
@@ -33,6 +38,13 @@ def wait_until_true(conditions, max_call_count=61, sleep_duration=1):
     yield
 
 
-def wait(wait_time=1):
+@contextmanager
+def wait_before(wait_time=1):
     time.sleep(wait_time)
     yield
+
+
+@contextmanager
+def wait_after(wait_time=1):
+    yield
+    time.sleep(wait_time)

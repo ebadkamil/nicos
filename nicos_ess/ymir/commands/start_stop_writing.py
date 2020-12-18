@@ -30,17 +30,21 @@ class StartFileWriter(WriterBase):
 
     def start_job(self):
         with open(self.config, "r") as f:
+            # Get the nexus structure from config.
             nexus_structure = f.read()
+        # Initialise the write job.
         self.write_job = WriteJob(
             nexus_structure,
             "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(datetime.now()),
             self.host,
             datetime.now(),
         )
+        # Start.
         start_handler = self.job_handler.start_job(self.write_job)
         self.job_id = self.write_job.job_id
         wait_until_true([start_handler.is_done()])
         session.log.info('Write job is started.')
+        return True
 
     def get_handler(self):
         return self.job_handler
