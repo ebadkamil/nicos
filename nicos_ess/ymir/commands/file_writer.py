@@ -66,8 +66,6 @@ class StartStopWriting(SetGetHandler):
                     # warning.
                     return
 
-            self._monitor_write_process()
-
     def stop(self):
         """
         Stops the write job and update the handler status so that a new job can
@@ -84,13 +82,6 @@ class StartStopWriting(SetGetHandler):
         if not handler.get_state() == JobState.WRITING:
             return False
         return True
-
-    def _monitor_write_process(self):
-        while True:
-            with wait_after(10):  # Validate every ten seconds.
-                if not self._validate_write_process():
-                    session.log.error('File writer has failed.')
-                    return
 
 
 ss_writing = StartStopWriting()
