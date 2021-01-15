@@ -9,45 +9,10 @@ from streaming_data_types import deserialise_x5f2
 
 import json
 
+from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
 
-class FileWriterStatus(KafkaSubscriber, Readable):
 
-    parameters = {
-        'statustopic': Param(
-            'Kafka topic where status messages are written',
-            type=str, settable=False, preinit=True, mandatory=True,
-            userparam=False,),
-        'timeoutinterval': Param(
-            'Time to wait (secs) before communication is considered lost',
-            type=int, default=5, settable=True, userparam=False,),
-        'curstatus': Param('Store the current device status',
-            internal=True, type=tupleof(int, str), settable=True,),
-        'nextupdate': Param('Time when the next message is expected',
-            type=int, internal=True, settable=True, ),
-        'statusinterval': Param(
-            'Expected time (secs) interval for the status message updates',
-            type=int, default=2, settable=True, internal=True, ),
-    }
-
-    def doPreinit(self, mode):
-        KafkaSubscriber.doPreinit(self, mode)
-        if session.sessiontype != POLLER and mode != SIMULATION:
-            self.subscribe(self.statustopic)
-
-        # Be pessimistic and assume the process is down, if the process
-        # is up then the status will be remedied quickly.
-        self._setROParam('nextupdate', currenttime())
-
-        if self._mode == MASTER:
-            self._setROParam(
-                'curstatus', (status.WARN, 'Trying to connect...')
-            )
-
-    def doRead(self, maxage=0):
-        return ''
-
-    def doStatus(self, maxage=0):
-        return self.curstatus
+class FileWriterStatus(KafkaStatusHandler, Readable):
 
     def new_messages_callback(self, messages):
         key = max(messages.keys())
@@ -64,17 +29,6 @@ class FileWriterStatus(KafkaSubscriber, Readable):
             next_update = currenttime() + self.statusinterval
             if next_update > self.nextupdate:
                 self._setROParam('nextupdate', next_update)
-
-    def no_messages_callback(self):
-        # Check if the process is still running
-        if self._mode == MASTER and not self.is_process_running():
-            self._setROParam('curstatus', (status.ERROR, 'Disconnected'))
-
-    def is_process_running(self):
-        # Allow some leeway in case of message lag.
-        if currenttime() > self.nextupdate + self.timeoutinterval:
-            return False
-        return True
 
 
 class FileWriterParameters(Device):
