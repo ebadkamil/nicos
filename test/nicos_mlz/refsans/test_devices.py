@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -210,3 +210,22 @@ class TestChopper:
                                    'wlmax': 21.0, 'wlmin': 0.0}
         assert chopper2.phase == 300
         assert chopper.mode == 'virtual_disc2_pos_6'
+
+
+class TestDimetixLaser:
+    """Class to test the DimetixLaser code."""
+
+    @pytest.fixture(scope='function', autouse=True)
+    def prepare(self, session):
+        signal = session.getDevice('dix_signal')
+        yield
+        signal.curvalue = 10000
+
+    def test_good_read(self, session):
+        """Signal strength is ok."""
+        assert session.getDevice('dix').read(0) == 1234
+
+    def test_bad_read(self, session):
+        """Signal strength is bad."""
+        session.getDevice('dix_signal').curvalue = 7000
+        assert session.getDevice('dix').read(0) == -2000

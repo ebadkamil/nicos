@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -28,8 +28,8 @@ import kafka
 import numpy as np
 from streaming_data_types.histogram_hs00 import deserialise_hs00
 
-from nicos.core import ArrayDesc, Override, Param, Value, floatrange, oneof, \
-    status, tupleof
+from nicos.core import ArrayDesc, Override, Param, Value, floatrange, anytype, \
+    oneof, status, tupleof
 from nicos.core.constants import LIVE
 from nicos.core.device import Measurable
 
@@ -82,6 +82,10 @@ class JustBinItDetector(KafkaSubscriber, Measurable):
                            type=tupleof(int, str), default=(status.OK, ''),
                            settable=True, internal=True,
                            ),
+        'hist_data': Param('Store the current histogram data',
+                           type=anytype, default=np.array([]),
+                           settable=True, internal=True,
+                           ),
         'unique_id': Param('Store the current identifier', type=str,
                            default='', settable=True, internal=True,
                            ),
@@ -98,7 +102,6 @@ class JustBinItDetector(KafkaSubscriber, Measurable):
     parameter_overrides = {
         'unit': Override(default='events', settable=False, mandatory=False),
     }
-
     _last_live = 0
     _presets = {}
 
@@ -118,7 +121,11 @@ class JustBinItDetector(KafkaSubscriber, Measurable):
 
     def doPrepare(self):
         self.curstatus = status.BUSY, 'Preparing'
-        self.subscribe(self.hist_topic)
+        try:
+            self.subscribe(self.hist_topic)
+        except Exception as error:
+            self.curstatus = status.ERROR, str(error)
+            raise
         self.curstatus = status.OK, ''
 
     def new_messages_callback(self, messages):
@@ -141,11 +148,11 @@ class JustBinItDetector(KafkaSubscriber, Measurable):
             self._consumer.unsubscribe()
             self.curstatus = status.OK, ''
 
-        if self.hist_type == '1-D DET':
-            self._hist_data = hist['data']
+        if self.hist_type == '1-D TOF':
+            self.hist_data = hist['data']
         else:
             # For the ESS detector orientation, pixel 0 is at top-left
-            self._hist_data = np.rot90(hist['data'])
+            self.hist_data = np.rot90(hist['data'])
 
         self._hist_edges = hist['dim_metadata'][0]['bin_boundaries']
 
@@ -242,10 +249,10 @@ class JustBinItDetector(KafkaSubscriber, Measurable):
         return config_base
 
     def doRead(self, maxage=0):
-        return [self._hist_data.sum()]
+        return [self.hist_data.sum()]
 
     def doReadArrays(self, quality):
-        return self._hist_data
+        return self.hist_data
 
     def doFinish(self):
         self._stop_histogramming()
@@ -266,7 +273,7 @@ class JustBinItDetector(KafkaSubscriber, Measurable):
 
     def doSetPreset(self, **presets):
         self.curstatus = status.BUSY, 'Preparing'
-        self._hist_data = np.array([])
+        self.hist_data = np.array([])
         self._hist_edges = np.array([])
         self._presets = presets
 

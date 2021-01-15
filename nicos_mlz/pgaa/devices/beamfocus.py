@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -52,15 +52,20 @@ class BeamFocus(Moveable):
         self._attached_ellipse.move(0)
         self._attached_collimator.move(0)
 
-    def doStart(self, pos):
-        if pos != self.doRead(0):
-            if pos == 'Ell':
-                self._attached_collimator.move(0)
-                self._attached_ellipse.move(1)
-            elif pos == 'Col':
-                self._attached_ellipse.move(0)
-                self._attached_collimator.move(1)
+    def doStart(self, target):
+        if not self.isAtTarget(target=target):
+            devs = [self._attached_ellipse, self._attached_collimator]
+            pos = [1, 0] if target == 'Ell' else [0, 1]
+            for d, p in zip(devs, pos):
+                d.maw(p)
             self._hw_wait()
+
+    def isAtTarget(self, pos=None, target=None):
+        if target is None:
+            target = self.target
+        if pos is None:
+            pos = self.doRead(0)
+        return pos == target
 
     def doRead(self, maxage=0):
         ell = self._attached_ellipse.read(maxage)

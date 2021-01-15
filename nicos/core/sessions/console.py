@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -264,7 +264,7 @@ class ConsoleSession(Session):
                 signal.signal(signal.SIGINT, signal.default_int_handler)
             elif reply.upper() == 'D':
                 # print a stacktrace and debug
-                self.log.info(formatExtendedStack(2))
+                self.log.info(formatExtendedStack(None, 2))
                 pdb.Pdb().set_trace(sys._getframe(1))
             elif reply.upper() == 'I':
                 pass

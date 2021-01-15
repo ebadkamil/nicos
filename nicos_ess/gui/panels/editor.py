@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -55,12 +55,12 @@ class EditorPanel(DefaultEditorPanel):
         bar.addAction(self.actionCopy)
         bar.addAction(self.actionPaste)
         bar.addSeparator()
-        bar.addAction(self.actionRun)
         bar.addAction(self.actionSimulate)
+        bar.addAction(self.actionRun)
         bar.addAction(self.actionGet)
         bar.addAction(self.actionUpdate)
-        showToolText(bar, self.actionRun)
         showToolText(bar, self.actionSimulate)
+        showToolText(bar, self.actionRun)
         showToolText(bar, self.actionGet)
         showToolText(bar, self.actionUpdate)
         return bar

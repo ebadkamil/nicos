@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -435,7 +435,7 @@ class DataManager:
 
     def linkFiles(self, filepath, linkpaths):
         """Creates hardlinks in *linkpaths*, pointing to *filepath*."""
-        linkfunc = os.link if hasattr(os,  'link') else \
+        linkfunc = os.link if hasattr(os, 'link') else \
             os.symlink if hasattr(os, 'symlink') else None
         if linkfunc:  # pylint: disable=using-constant-test
             for linkpath in linkpaths:

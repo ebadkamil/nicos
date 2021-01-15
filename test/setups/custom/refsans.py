@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -448,6 +448,22 @@ devices = dict(
     ),
     primary_aperture = device('nicos.devices.generic.DeviceAlias'),
     last_aperture = device('nicos.devices.generic.DeviceAlias'),
+    dix_value = device('nicos.devices.generic.VirtualMotor',
+        abslimits = (0, 12000),
+        unit = 'mm',
+        lowlevel = True,
+        curvalue = 1234,
+    ),
+    dix_signal = device('nicos.devices.generic.VirtualMotor',
+        abslimits = (7000, 20000),
+        unit = '',
+        lowlevel = True,
+        curvalue = 10000,
+    ),
+    dix = device('nicos_mlz.refsans.devices.dimetix.DimetixLaser',
+        value = 'dix_value',
+        signal = 'dix_signal',
+    ),
 )
 
 alias_config = {

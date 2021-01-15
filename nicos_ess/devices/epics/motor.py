@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -27,6 +27,7 @@ from nicos.core import Override, Param, pvname, status
 from nicos.core.errors import ConfigurationError
 from nicos.core.mixins import CanDisable, HasOffset
 from nicos.devices.abstract import CanReference, Motor
+from nicos.core.device import requires
 
 from nicos_ess.devices.epics.base import EpicsAnalogMoveableEss
 
@@ -278,3 +279,22 @@ class EpicsMotor(CanDisable, CanReference, HasOffset, EpicsAnalogMoveableEss,
         self._put_pv('writepv', pos)
         self._put_pv('set', 0)
         self._put_pv('foff', 0)
+
+
+class HomingProtectedEpicsMotor(EpicsMotor):
+    """
+    The only thing that this class adds to EpicsMotor is that
+    the reference run can only happen with admin rights
+    """
+
+    @requires(level='admin')
+    def doReference(self):
+        EpicsMotor.doReference(self)
+
+
+class AbsoluteEpicsMotor(EpicsMotor):
+    """
+    The instances of this class cannot be homed.
+    """
+    def doReference(self):
+        self.log.warning('This motor does not require homing - command ignored')

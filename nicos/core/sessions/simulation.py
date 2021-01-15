@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -136,7 +136,12 @@ class SimulationSession(Session):
     sessiontype = SIMULATION
 
     def begin_setup(self):
-        self.log_sender.level = logging.ERROR  # log only errors before code starts
+        # log only errors before code starts
+        self.log_sender.level = logging.ERROR
+
+    def clientExec(self, func, args):
+        # just ignore these requests, they are not vital to the measurement
+        pass
 
     @classmethod
     def run(cls, sock, uuid, setups, user, code, quiet=False, debug=False):
@@ -172,7 +177,7 @@ class SimulationSession(Session):
         session.log.info('setting up dry run...')
         session.begin_setup()
         # Handle "print" statements in the script.
-        sys.stdout = LoggingStdout(sys.stdout)
+        sys.stdout = LoggingStdout()
 
         try:
             # Initialize the session in simulation mode.
@@ -333,7 +338,7 @@ class SimulationSupervisor(Thread):
         try:
             proc.wait(5)
         except TimeoutError:
-            raise Exception('did not terminate within 5 seconds')
+            raise Exception('did not terminate within 5 seconds') from None
         if sandbox:
             try:
                 os.rmdir(rootdir)

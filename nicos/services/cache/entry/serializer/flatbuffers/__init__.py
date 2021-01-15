@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -41,8 +41,8 @@ class FlatbuffersCacheEntrySerializer(CacheEntrySerializer):
     def encode(self, key, entry, schema='ns10', **params):
         try:
             ttl = entry.ttl if entry.ttl else 0
-            return serialise_ns10(key, entry.value, entry.time, ttl,
-                                  entry.expired)
+            value = entry.value if entry.value else ''
+            return serialise_ns10(key, value, entry.time, ttl, entry.expired)
         except Exception as error:
             self.log.error('Cannot encode ns10 cache entry: %s', error)
 

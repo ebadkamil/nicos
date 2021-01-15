@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -40,7 +40,8 @@ from nicos.core import SIMULATION, ArrayDesc, CanDisable, CommunicationError, \
     ConfigurationError, Device, HardwareError, HasCommunication, HasLimits, \
     HasPrecision, HasTimeout, InvalidValueError, Moveable, NicosError, \
     Override, Param, ProgrammingError, Readable, Value, dictof, floatrange, \
-    intrange, listof, nonemptylistof, oneof, oneofdict, status, tangodev
+    intrange, listof, nonemptylistof, oneof, oneofdict, status, tangodev, \
+    waitForCompletion
 from nicos.core.constants import FINAL, SLAVE
 from nicos.core.mixins import HasOffset, HasWindowTimeout
 from nicos.devices.abstract import CanReference, Coder, Motor as NicosMotor
@@ -166,7 +167,7 @@ def check_tango_host_connection(address, timeout=3.0):
         with tcpSocketContext(tango_host, 10000, timeout=timeout):
             pass
     except OSError as e:
-        raise CommunicationError(str(e))
+        raise CommunicationError(str(e)) from None
 
 
 class PyTangoDevice(HasCommunication):
@@ -237,7 +238,7 @@ class PyTangoDevice(HasCommunication):
             session.delay(self._base_loop_delay)
 
     def _setMode(self, mode):
-        super(PyTangoDevice, self)._setMode(mode)
+        super()._setMode(mode)
         # remove the Tango device on entering simulation mode, to prevent
         # accidental access to the hardware
         if mode == SIMULATION:
@@ -280,7 +281,7 @@ class PyTangoDevice(HasCommunication):
             device.State
         except AttributeError:
             raise NicosError(self, 'connection to Tango server failed, '
-                             'is the server running?')
+                             'is the server running?') from None
         return self._applyGuardsToPyTangoDevice(device)
 
     def _applyGuardsToPyTangoDevice(self, dev):
@@ -288,6 +289,10 @@ class PyTangoDevice(HasCommunication):
         Wraps command execution and attribute operations of the given
         device with logging and exception mapping.
         """
+        # if the device is in the proxy cache, and has already been
+        # successfully created once, skip it
+        if getattr(dev, '_nicos_proxies_applied', False):
+            return dev
         dev.command_inout = self._applyGuardToFunc(dev.command_inout)
         dev.write_attribute = self._applyGuardToFunc(dev.write_attribute,
                                                      'attr_write')
@@ -295,6 +300,7 @@ class PyTangoDevice(HasCommunication):
                                                     'attr_read')
         dev.attribute_query = self._applyGuardToFunc(dev.attribute_query,
                                                      'attr_query')
+        dev._nicos_proxies_applied = True
         return dev
 
     def _applyGuardToFunc(self, func, category='cmd'):
@@ -987,6 +993,9 @@ class ImageChannel(BaseImageChannel):
             self.readArray(FINAL)  # update readresult at startup
 
     def doReadArray(self, quality):
+        # on quality FINAL wait for tango ImageChannel finishing readout
+        if quality == FINAL:
+            waitForCompletion(self)
         narray = BaseImageChannel.doReadArray(self, quality)
         self.readresult = [narray.sum()]
         return narray

@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -1063,23 +1063,27 @@ def formatExtendedTraceback(etype, value, tb):
     return ''.join(ret).rstrip('\n')
 
 
-def formatExtendedStack(level=1):
-    f = sys._getframe(level)
+def formatExtendedStack(frame=None, level=1):
+    """Format a stacktrace, starting at the given *frame* (or the current
+    frame), showing source and local variables of each frame.
+    """
+    if frame is None:
+        frame = sys._getframe(level)
     ret = ['Stack trace (most recent call last):\n\n']
-    while f is not None:
-        lineno = f.f_lineno
-        co = f.f_code
+    while frame is not None:
+        lineno = frame.f_lineno
+        co = frame.f_code
         filename = co.co_filename
         name = co.co_name
         item = '  File "%s", line %d, in %s\n' % (filename, lineno, name)
         linecache.checkcache(filename)
-        line = linecache.getline(filename, lineno, f.f_globals)
+        line = linecache.getline(filename, lineno, frame.f_globals)
         if line:
             item = item + '    %s\n' % line.strip()
         ret.insert(1, item)
         if filename != '<script>':
-            ret[2:2] = formatExtendedFrame(f)
-        f = f.f_back
+            ret[2:2] = formatExtendedFrame(frame)
+        frame = frame.f_back
     return ''.join(ret).rstrip('\n')
 
 

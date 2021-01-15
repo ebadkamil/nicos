@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -35,6 +35,36 @@ from nicos.core import LIVE, ConfigurationError, DataSinkHandler, Override
 from nicos.core.data.sink import NicosMetaWriterMixin
 from nicos.devices.datasinks.image import ImageFileReader, ImageSink, \
     SingleFileSinkHandler
+
+
+class SingleTextImageSinkHandler(NicosMetaWriterMixin, SingleFileSinkHandler):
+
+    defer_file_creation = True
+    update_headerinfo = True
+
+    def writeHeader(self, fp, metainfo, image):
+        fp.seek(0)
+        np.savetxt(fp, image, fmt='%d', delimiter='\t', newline='\n')
+        fp.write(b'\n')
+        self.writeMetaInformation(fp)
+        fp.flush()
+
+
+class SingleTextImageSink(ImageSink):
+    """Writes raw text image data and header into a single file.
+
+    Formatting of the image data is done by numpy itself, depending on the
+    image shape.
+    """
+
+    parameter_overrides = {
+        'filenametemplate': Override(mandatory=False, userparam=False,
+                                     default=['%(proposal)s_%(pointcounter)s.raw',
+                                              '%(proposal)s_%(scancounter)s'
+                                              '_%(pointnumber)s.raw']),
+    }
+
+    handlerclass = SingleTextImageSinkHandler
 
 
 class SingleRawImageSinkHandler(NicosMetaWriterMixin, SingleFileSinkHandler):

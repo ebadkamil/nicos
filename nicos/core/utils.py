@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -293,7 +293,7 @@ def waitForState(dev, state, delay=0.3, ignore_errors=False):
             if st == state:
                 break
             session.delay(delay)
-    except BaseException:
+    except Exception:
         if ignore_errors:
             return
         raise

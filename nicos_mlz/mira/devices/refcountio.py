@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -54,9 +54,7 @@ class MultiDigitalOutput(Moveable):
             dev.start(target)
 
     def doRead(self, maxage=0):
-        values = []
-        for dev in self._adevs['outputs']:
-            values.append(dev.read(maxage))
+        values = [dev.read(maxage) for dev in self._adevs['outputs']]
         if len(set(values)) != 1:
             devnames = [dev.name for dev in self._adevs['outputs']]
             raise NicosError(self,

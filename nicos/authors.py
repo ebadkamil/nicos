@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -36,11 +36,13 @@ Contributors:
 
 * Nikolas Arend <n.arend@fz-juelich.de>
 * Nikhil Biyani <nikhil.biyani@psi.ch>
+* Pierre Boillat <pierre.boillat@psi.ch>
 * Matt Clarke <matt.clarke@esss.se>
 * Robert Georgii <robert.georgii@frm2.tum.de>
 * Michael Hart <michael.hart@stfc.ac.uk>
 * Klaudia Hradil <klaudia.hradil@tuwien.ac.at>
 * Lea Kleesattel <lea.kleesattel@frm2.tum.de>
+* Jakob Lass <jakob.lass@gmail.com>
 * Peter Link <peter.link@frm2.tum.de>
 * Pascal Neubert <pascal.neubert@frm2.tum.de>
 * Adrian Potter <adrian.potter@tessella.com>
@@ -57,10 +59,12 @@ Instrument-specific code was contributed by:
 
 * Fabian Beule <f.beule@fz-juelich.de>
 * Michele Brambilla <michele.brambilla@psi.ch>
+* Alexey Bykov <redi87@bk.ru>
 * Petr Cermak <cermak@mag.mff.cuni.cz>
 * Goetz Eckold <geckold@gwdg.de>
 * Artem Feoktystov <a.feoktystov@fz-juelich.de>
 * Lydia Fleischhauer-Fuss <l.fleischhauer-fuss@fz-juelich.de>
+* Arno Frank <arno.frank@tuwien.ac.at>
 * Jonathan Frank <jonathan.frank@frm2.tum.de>
 * Christian Franz <christian.franz@frm2.tum.de>
 * Weimin Gan <weimin.gan@hzg.de>
@@ -71,6 +75,8 @@ Instrument-specific code was contributed by:
 * Michael Hofmann <michael.hofmann@frm2.tum.de>
 * Markus Hölzel <markus.hölzel@frm2.tum.de>
 * Stefan Huber <stefan.huber@frm2.tum.de>
+* Leonardo Ibanez <leoo.davinci@gmail.com>
+* Johanna Jochum <johanna.jochum@frm2.tum.de>
 * Stefanie Keuler <s.keuler@fz-juelich.de>
 * Sabrina Kirstein <s.kirstein@fz-juelich.de>
 * Mark Könnecke <Mark.Koennecke@psi.ch>
@@ -93,6 +99,7 @@ Instrument-specific code was contributed by:
 * Olaf Soltwedel <olaf.soltwedel@frm2.tum.de>
 * Stefan Söllradl <stefan.soellradl@frm2.tum.de>
 * Alexander Steffens <a.steffens@fz-juelich.de>
+* Iwan Sumirat <sumirat@batan.go.id>
 * Henrik Thoma <henrik.thoma@frm2.tum.de>
 * Michael Wagener <m.wagener@fz-juelich.de>
 * Tobias Weber <tobias.weber@frm2.tum.de>

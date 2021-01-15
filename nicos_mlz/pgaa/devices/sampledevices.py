@@ -1,7 +1,7 @@
 #  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
-# Copyright (c) 2009-2020 by the NICOS contributors (see AUTHORS)
+# Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -23,10 +23,7 @@
 # *****************************************************************************
 """Auxiliary classes for the sample changer."""
 
-from nicos.core import SIMULATION, Attach, Moveable, Override, Readable, \
-    oneof, status
-
-from nicos_mlz.panda.devices.mcc2 import MCC2Motor
+from nicos.core import Attach, Moveable, Override, Readable, oneof, status
 
 
 class SamplePusher(Moveable):
@@ -69,12 +66,3 @@ class SamplePusher(Moveable):
             return 'up'
         elif self._attached_sensorl.read(maxage):
             return 'down'
-
-
-class SampleMotor(MCC2Motor):
-
-    def doInit(self, mode):
-        MCC2Motor.doInit(self, mode)
-        # unlock motor
-        if mode != SIMULATION:
-            self.comm('XP27S1')
