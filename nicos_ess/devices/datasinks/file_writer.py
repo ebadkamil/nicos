@@ -1,14 +1,7 @@
 from time import time as currenttime
-
-from nicos_ess.devices.kafka.consumer import KafkaSubscriber
-from nicos.core import Readable, tupleof, Param, POLLER, status, MASTER, Device, host, listof
-from nicos import session
-from nicos.core.constants import SIMULATION
-
+from nicos.core import Readable, Param, status, Device, host, listof
 from streaming_data_types import deserialise_x5f2
-
 import json
-
 from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
 
 
