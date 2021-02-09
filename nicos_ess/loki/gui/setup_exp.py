@@ -30,7 +30,8 @@ from nicos.clients.gui.panels import Panel, PanelDialog
 from nicos.clients.gui.utils import loadUi
 from nicos.core import ConfigurationError
 from nicos.core.params import mailaddress
-from nicos.guisupport.qt import QDialogButtonBox, QMessageBox, pyqtSlot
+from nicos.guisupport.qt import QDialogButtonBox, QLineEdit, QMessageBox, \
+     pyqtSlot
 from nicos.utils import decodeAny, findResource
 
 
@@ -66,6 +67,7 @@ class ExpPanel(Panel):
         # Hide proposal retrieval until available
         self.propdbInfo.setVisible(False)
         self.queryDBButton.setVisible(False)
+        self.applyWarningLabel.setStyleSheet('color: red')
 
         if client.isconnected:
             self.on_client_connected()
@@ -76,6 +78,16 @@ class ExpPanel(Panel):
         client.disconnected.connect(self.on_client_disconnected)
         client.setup.connect(self.on_client_setup)
         client.experiment.connect(self.on_client_experiment)
+
+        # Setting up warning label so user remembers to press apply button.
+        self._defined_Emails = self.notifEmails.toPlainText().strip()
+        self.expTitle.textChanged.connect(self.on_expTitle_text_edit)
+        self.proposalNum.textChanged.connect(self.on_proposalNum_text_edit)
+        self.users.textChanged.connect(self.on_users_text_edit)
+        self.notifEmails.textChanged.connect(self.on_notifEmails_text_edit)
+        self.applyWarningLabel.setVisible(False)
+
+
 
     def _update_proposal_info(self):
         values = self.client.eval('session.experiment.proposal, '
@@ -284,3 +296,33 @@ class ExpPanel(Panel):
                             'is currently running.')
             self.showInfo('\n'.join(done))
         self._update_proposal_info()
+        self._defined_Emails = self.notifEmails.toPlainText().strip()
+        self.applyWarningLabel.setVisible(False)
+
+    @pyqtSlot()
+    def on_errorAbortBox_clicked(self):
+        value = 'abort' if self.errorAbortBox.isChecked() else 'report'
+        self.applyWarningLabel.setVisible(value != self._orig_proposal_info[4])
+
+    def on_proposalNum_text_edit(self):
+        self._apply_warning_status(self.proposalNum, 0)
+
+    def on_expTitle_text_edit(self):
+        self._apply_warning_status(self.expTitle, 1)
+
+    def on_users_text_edit(self):
+        self._apply_warning_status(self.users, 2)
+
+    def on_localContact_text_edit(self):
+        self._apply_warning_status(self.localContact, 3)
+
+    def on_notifEmails_text_edit(self):
+        emails = self.notifEmails.toPlainText().strip()
+        self.applyWarningLabel.setVisible(emails != self._defined_Emails)
+
+    def _apply_warning_status(self, obj: QLineEdit, index: int):
+        text = obj.text()
+        self.applyWarningLabel.\
+            setVisible(text != decodeAny(self._orig_proposal_info[index]))
+
+
