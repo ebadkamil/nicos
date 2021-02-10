@@ -30,7 +30,7 @@ from nicos.clients.gui.panels.setup_panel import ExpPanel as DefaultExpPanel, \
 from nicos.clients.gui.utils import loadUi
 from nicos.core import ConfigurationError, mailaddress
 from nicos.guisupport.qt import QDialogButtonBox, QLineEdit, \
-    QMessageBox, QPlainTextEdit, Qt, pyqtSlot
+    QMessageBox, Qt, pyqtSlot
 from nicos.utils import decodeAny
 
 from nicos_ess.gui import uipath
@@ -61,6 +61,7 @@ class ExpPanel(DefaultExpPanel):
         self.localContact.textChanged.connect(self.on_localContact_text_edit)
         self.sampleName.textChanged.connect(self.on_sampleName_text_edit)
         self.notifEmails.textChanged.connect(self.on_notifEmails_text_edit)
+        self.dataEmails.textChanged.connect(self.on_dataEmails_text_edit)
         self.applyWarningLabel.setStyleSheet('color: red')
         self.applyWarningLabel.setVisible(False)
 
@@ -247,7 +248,7 @@ class ExpPanel(DefaultExpPanel):
 
     def on_dataEmails_text_edit(self):
         data_emails = self.dataEmails.toPlainText().strip()
-        self.is_exp_props_edited[7] = data_emails != self.defined_data_emails
+        self.is_exp_props_edited[7] = data_emails != self._defined_data_emails
         self._set_warning_visibility()
 
     def _apply_warning_status(self, obj: QLineEdit, index: int):
