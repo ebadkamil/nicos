@@ -86,6 +86,7 @@ class ExpPanel(Panel):
         self.expTitle.textChanged.connect(self.on_expTitle_text_edit)
         self.proposalNum.textChanged.connect(self.on_proposalNum_text_edit)
         self.users.textChanged.connect(self.on_users_text_edit)
+        self.localContact.textChanged.connect(self.on_localContact_text_edit)
         self.notifEmails.textChanged.connect(self.on_notifEmails_text_edit)
         self.applyWarningLabel.setVisible(False)
 
@@ -301,11 +302,6 @@ class ExpPanel(Panel):
         self._defined_Emails = self.notifEmails.toPlainText().strip()
         self.applyWarningLabel.setVisible(False)
 
-    @pyqtSlot()
-    def on_errorAbortBox_clicked(self):
-        value = 'abort' if self.errorAbortBox.isChecked() else 'report'
-        self.applyWarningLabel.setVisible(value != self._orig_proposal_info[4])
-
     def on_proposalNum_text_edit(self):
         self._apply_warning_status(self.proposalNum, 0)
 
@@ -318,15 +314,25 @@ class ExpPanel(Panel):
     def on_localContact_text_edit(self):
         self._apply_warning_status(self.localContact, 3)
 
+    @pyqtSlot()
+    def on_errorAbortBox_clicked(self):
+        value = 'abort' if self.errorAbortBox.isChecked() else 'report'
+        self.is_exp_props_edited[4] = value != self._orig_proposal_info[4]
+        self._set_warning_visibility()
+
     def on_notifEmails_text_edit(self):
         emails = self.notifEmails.toPlainText().strip()
-        self.applyWarningLabel.setVisible(emails != self._defined_Emails)
+        self.is_exp_props_edited[5] = emails != self._defined_Emails
+        self._set_warning_visibility()
 
     def _apply_warning_status(self, obj: QLineEdit, index: int):
         text = obj.text()
         self.is_exp_props_edited[index] =\
         text != decodeAny(self._orig_proposal_info[index])
-        self.applyWarningLabel.\
+        self._set_warning_visibility()
+
+    def _set_warning_visibility(self):
+        self.applyWarningLabel. \
             setVisible(True if any(self.is_exp_props_edited) is True else False)
 
 
