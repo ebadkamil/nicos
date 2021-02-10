@@ -330,5 +330,3 @@ class ExpPanel(Panel):
             setVisible(True if any(self.is_exp_props_edited) is True else False)
 
 
-
-
