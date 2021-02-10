@@ -82,7 +82,7 @@ class ExpPanel(Panel):
         # Setting up warning label so user remembers to press apply button.
         nbr_experiment_props_opts = 6
         self.is_exp_props_edited = [False] * nbr_experiment_props_opts
-        self._defined_Emails = self.notifEmails.toPlainText().strip()
+        self._defined_emails = self.notifEmails.toPlainText().strip()
         self.expTitle.textChanged.connect(self.on_expTitle_text_edit)
         self.proposalNum.textChanged.connect(self.on_proposalNum_text_edit)
         self.users.textChanged.connect(self.on_users_text_edit)
@@ -299,7 +299,7 @@ class ExpPanel(Panel):
                             'is currently running.')
             self.showInfo('\n'.join(done))
         self._update_proposal_info()
-        self._defined_Emails = self.notifEmails.toPlainText().strip()
+        self._defined_emails = self.notifEmails.toPlainText().strip()
         self.applyWarningLabel.setVisible(False)
 
     def on_proposalNum_text_edit(self):
@@ -322,7 +322,7 @@ class ExpPanel(Panel):
 
     def on_notifEmails_text_edit(self):
         emails = self.notifEmails.toPlainText().strip()
-        self.is_exp_props_edited[5] = emails != self._defined_Emails
+        self.is_exp_props_edited[5] = emails != self._defined_emails
         self._set_warning_visibility()
 
     def _apply_warning_status(self, obj: QLineEdit, index: int):

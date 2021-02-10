@@ -29,7 +29,9 @@ from nicos.clients.gui.panels.setup_panel import ExpPanel as DefaultExpPanel, \
     SetupsPanel as DefaultSetupsPanel
 from nicos.clients.gui.utils import loadUi
 from nicos.core import ConfigurationError, mailaddress
-from nicos.guisupport.qt import QDialogButtonBox, QMessageBox, Qt, pyqtSlot
+from nicos.guisupport.qt import QDialogButtonBox, QLineEdit, \
+    QMessageBox, QPlainTextEdit, Qt, pyqtSlot
+from nicos.utils import decodeAny
 
 from nicos_ess.gui import uipath
 
@@ -45,6 +47,22 @@ class ExpPanel(DefaultExpPanel):
 
     panelName = 'Experiment setup'
     ui = '%s/panels/ui_files/setup_exp.ui' % uipath
+
+    def __init__(self, parent, client, options):
+        super().__init__(parent, client, options)
+        # Setting up warning label so user remembers to press apply button.
+        nbr_experiment_props_opts = 8
+        self.is_exp_props_edited = [False] * nbr_experiment_props_opts
+        self._defined_emails = self.notifEmails.toPlainText().strip()
+        self._defined_data_emails = self.dataEmails.toPlainText().strip()
+        self.expTitle.textChanged.connect(self.on_expTitle_text_edit)
+        self.proposalNum.textChanged.connect(self.on_proposalNum_text_edit)
+        self.users.textChanged.connect(self.on_users_text_edit)
+        self.localContact.textChanged.connect(self.on_localContact_text_edit)
+        self.sampleName.textChanged.connect(self.on_sampleName_text_edit)
+        self.notifEmails.textChanged.connect(self.on_notifEmails_text_edit)
+        self.applyWarningLabel.setStyleSheet('color: red')
+        self.applyWarningLabel.setVisible(False)
 
     def on_client_connected(self):
         # fill proposal
@@ -151,6 +169,9 @@ class ExpPanel(DefaultExpPanel):
         if done:
             self.showInfo('\n'.join(done))
         self._update_proposal_info()
+        self._defined_emails = self.notifEmails.toPlainText().strip()
+        self._defined_data_emails = self.dataEmails.toPlainText().strip()
+        self.applyWarningLabel.setVisible(False)
 
     @pyqtSlot()
     def on_queryDBButton_clicked(self):
@@ -197,6 +218,47 @@ class ExpPanel(DefaultExpPanel):
             self.log.warning(e, exc=1)
             self.showInfo('Reading proposaldb failed for an unknown reason. '
                           'Please check logfiles....\n' + repr(e))
+
+    def on_proposalNum_text_edit(self):
+        self._apply_warning_status(self.proposalNum, 0)
+
+    def on_expTitle_text_edit(self):
+        self._apply_warning_status(self.expTitle, 1)
+
+    def on_users_text_edit(self):
+        self._apply_warning_status(self.users, 2)
+
+    def on_localContact_text_edit(self):
+        self._apply_warning_status(self.localContact, 3)
+
+    def on_sampleName_text_edit(self):
+        self._apply_warning_status(self.sampleName, 4)
+
+    @pyqtSlot()
+    def on_errorAbortBox_clicked(self):
+        value = 'abort' if self.errorAbortBox.isChecked() else 'report'
+        self.is_exp_props_edited[5] = value != self._orig_proposal_info[5]
+        self._set_warning_visibility()
+
+    def on_notifEmails_text_edit(self):
+        emails = self.notifEmails.toPlainText().strip()
+        self.is_exp_props_edited[6] = emails != self._defined_emails
+        self._set_warning_visibility()
+
+    def on_dataEmails_text_edit(self):
+        data_emails = self.dataEmails.toPlainText().strip()
+        self.is_exp_props_edited[7] = data_emails != self.defined_data_emails
+        self._set_warning_visibility()
+
+    def _apply_warning_status(self, obj: QLineEdit, index: int):
+        text = obj.text()
+        self.is_exp_props_edited[index] =\
+        text != decodeAny(self._orig_proposal_info[index])
+        self._set_warning_visibility()
+
+    def _set_warning_visibility(self):
+        self.applyWarningLabel. \
+            setVisible(True if any(self.is_exp_props_edited) is True else False)
 
 
 class SetupsPanel(DefaultSetupsPanel):
