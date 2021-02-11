@@ -333,6 +333,5 @@ class ExpPanel(Panel):
 
     def _set_warning_visibility(self):
         self.applyWarningLabel. \
-            setVisible(True if any(self.is_exp_props_edited) is True else False)
-
+            setVisible(any(self.is_exp_props_edited))
 
