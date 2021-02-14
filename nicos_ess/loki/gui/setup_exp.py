@@ -30,8 +30,7 @@ from nicos.clients.gui.panels import Panel, PanelDialog
 from nicos.clients.gui.utils import loadUi
 from nicos.core import ConfigurationError
 from nicos.core.params import mailaddress
-from nicos.guisupport.qt import QDialogButtonBox, QLineEdit, QMessageBox, \
-     pyqtSlot
+from nicos.guisupport.qt import QDialogButtonBox, QMessageBox, pyqtSlot
 from nicos.utils import decodeAny, findResource
 
 
@@ -80,7 +79,7 @@ class ExpPanel(Panel):
         client.experiment.connect(self.on_client_experiment)
 
         # Setting up warning label so user remembers to press apply button.
-        nbr_experiment_props_opts = 6
+        nbr_experiment_props_opts = len(self._getProposalInput())
         self.is_exp_props_edited = [False] * nbr_experiment_props_opts
         self._defined_emails = self.notifEmails.toPlainText().strip()
         self.expTitle.textChanged.connect(self.on_expTitle_text_edit)
@@ -88,9 +87,8 @@ class ExpPanel(Panel):
         self.users.textChanged.connect(self.on_users_text_edit)
         self.localContact.textChanged.connect(self.on_localContact_text_edit)
         self.notifEmails.textChanged.connect(self.on_notifEmails_text_edit)
+        self.applyWarningLabel.setStyleSheet('color: red')
         self.applyWarningLabel.setVisible(False)
-
-
 
     def _update_proposal_info(self):
         values = self.client.eval('session.experiment.proposal, '
@@ -171,7 +169,7 @@ class ExpPanel(Panel):
             local = mailaddress(self.localContact.text())
         except ValueError:
             QMessageBox.critical(self, 'Error', 'The local contact entry is '
-                                 'not  a valid email address')
+                                                'not  a valid email address')
             raise ConfigurationError('')
         emails = self.notifEmails.toPlainText().strip()
         emails = emails.split('\n') if emails else []
@@ -245,8 +243,9 @@ class ExpPanel(Panel):
 
         # check conditions
         if self.client.eval('session.experiment.serviceexp', True) and \
-           self.client.eval('session.experiment.proptype', 'user') == 'user' and \
-           self.client.eval('session.experiment.proposal', '') != prop:
+                self.client.eval('session.experiment.proptype',
+                                 'user') == 'user' and \
+                self.client.eval('session.experiment.proposal', '') != prop:
             self.showError('Can not directly switch experiments, please use '
                            'FinishExperiment first!')
             return
@@ -302,36 +301,33 @@ class ExpPanel(Panel):
         self._defined_emails = self.notifEmails.toPlainText().strip()
         self.applyWarningLabel.setVisible(False)
 
-    def on_proposalNum_text_edit(self):
-        self._apply_warning_status(self.proposalNum, 0)
+    def on_proposalNum_text_edit(self, value):
+        self._apply_warning_status(value, 0)
 
-    def on_expTitle_text_edit(self):
-        self._apply_warning_status(self.expTitle, 1)
+    def on_expTitle_text_edit(self, value):
+        self._apply_warning_status(value, 1)
 
-    def on_users_text_edit(self):
-        self._apply_warning_status(self.users, 2)
+    def on_users_text_edit(self, value):
+        self._apply_warning_status(value, 2)
 
-    def on_localContact_text_edit(self):
-        self._apply_warning_status(self.localContact, 3)
+    def on_localContact_text_edit(self, value):
+        self._apply_warning_status(value, 3)
 
     @pyqtSlot()
     def on_errorAbortBox_clicked(self):
         value = 'abort' if self.errorAbortBox.isChecked() else 'report'
-        self.is_exp_props_edited[4] = value != self._orig_proposal_info[4]
-        self._set_warning_visibility()
+        self._apply_warning_status(value, 4)
 
     def on_notifEmails_text_edit(self):
         emails = self.notifEmails.toPlainText().strip()
         self.is_exp_props_edited[5] = emails != self._defined_emails
         self._set_warning_visibility()
 
-    def _apply_warning_status(self, obj: QLineEdit, index: int):
-        text = obj.text()
-        self.is_exp_props_edited[index] =\
-        text != decodeAny(self._orig_proposal_info[index])
+    def _apply_warning_status(self, value, index):
+        self.is_exp_props_edited[index] = \
+            value != decodeAny(self._orig_proposal_info[index])
         self._set_warning_visibility()
 
     def _set_warning_visibility(self):
         self.applyWarningLabel. \
             setVisible(any(self.is_exp_props_edited))
-
