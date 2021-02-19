@@ -265,16 +265,6 @@
          <number>8</number>
         </property>
         <item>
-         <widget class="QDialogButtonBox" name="buttonBox">
-          <property name="layoutDirection">
-           <enum>Qt::RightToLeft</enum>
-          </property>
-          <property name="standardButtons">
-           <set>QDialogButtonBox::Apply</set>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QLabel" name="applyWarningLabel">
           <property name="font">
            <font>
@@ -286,10 +276,20 @@
            <string>Changes in the experiment proposal have not been applied. Press the apply button when finished editing!</string>
           </property>
           <property name="alignment">
-           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
           </property>
           <property name="textInteractionFlags">
            <set>Qt::NoTextInteraction</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDialogButtonBox" name="buttonBox">
+          <property name="layoutDirection">
+           <enum>Qt::LeftToRight</enum>
+          </property>
+          <property name="standardButtons">
+           <set>QDialogButtonBox::Apply</set>
           </property>
          </widget>
         </item>
