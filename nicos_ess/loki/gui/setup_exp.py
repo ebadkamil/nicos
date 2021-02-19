@@ -86,7 +86,9 @@ class ExpPanel(Panel):
         self.proposalNum.textChanged.connect(self.on_proposalNum_text_edit)
         self.users.textChanged.connect(self.on_users_text_edit)
         self.localContact.textChanged.connect(self.on_localContact_text_edit)
-        self.notifEmails.textChanged.connect(self.on_notifEmails_text_edit)
+        self.notifEmails.textChanged.connect(
+            lambda: self.on_notifEmails_text_edit(
+                self.notifEmails.toPlainText().strip()))
         self.applyWarningLabel.setStyleSheet('color: red')
         self.applyWarningLabel.setVisible(False)
 
@@ -318,9 +320,8 @@ class ExpPanel(Panel):
         value = 'abort' if self.errorAbortBox.isChecked() else 'report'
         self._apply_warning_status(value, 4)
 
-    def on_notifEmails_text_edit(self):
-        emails = self.notifEmails.toPlainText().strip()
-        self.is_exp_props_edited[5] = emails != self._defined_emails
+    def on_notifEmails_text_edit(self, value):
+        self.is_exp_props_edited[5] = value != self._defined_emails
         self._set_warning_visibility()
 
     def _apply_warning_status(self, value, index):
