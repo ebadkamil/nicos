@@ -106,14 +106,19 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
         def get_not_forwarding(msg, issued):
             if not msg["streams"]:
                 return issued.keys()
-
             pvs_read = []
             not_forwarded = []
             for stream in msg["streams"]:
                 pv = stream["channel_name"]
                 pvs_read.append(pv)
                 if pv in issued:
-                    forwarding = is_forwarding(issued[pv][0], issued[pv][1], stream["converters"])
+                    try:
+                         # 'converters' key doesn't exist in stream. Legacy?
+                        forwarding = is_forwarding(issued[pv][0], issued[pv][1],
+                            stream["converters"])
+                    except KeyError:
+                        forwarding = issued[pv][0] == stream["output_topic"] and issued[pv][1] == stream["schema"]
+
                     if not forwarding:
                         not_forwarded.append(pv)
             not_forwarded += [pv for pv in issued if pv not in pvs_read]
