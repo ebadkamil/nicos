@@ -1,11 +1,11 @@
 from time import time as currenttime
-from nicos.core import Readable, Param, status, Device, host, listof
+from nicos.core import Param, status, Device, host, listof
 from streaming_data_types import deserialise_x5f2
 import json
 from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
 
 
-class FileWriterStatus(KafkaStatusHandler, Readable):
+class FileWriterStatus(KafkaStatusHandler):
 
     def new_messages_callback(self, messages):
         key = max(messages.keys())
@@ -35,4 +35,12 @@ class FileWriterParameters(Device):
             userparam=False,),
         'nexus_config_path': Param('NeXus configuration file (full-path)',
             type=str, mandatory=True, userparam=False,),
+        'job_id': Param('Writer job identification',
+            type=str, mandatory=False, userparam=False,),
     }
+
+    def set_job_id(self, val):
+        self._setROParam('job_id', val)
+
+    def get_job_id(self):
+        return self.job_id

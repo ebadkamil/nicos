@@ -42,6 +42,8 @@ class StartFileWriter(WriterBase):
         # Start.
         start_handler = self.job_handler.start_job(self.write_job)
         self.job_id = self.write_job.job_id
+        # Send the acquired job identifier to the Nicos Cache.
+        self.device.set_job_id(self.job_id)
         wait_until_true([start_handler.is_done()])
         session.log.info('Write job is started.')
         return True
