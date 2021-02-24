@@ -51,6 +51,20 @@
         },
         {
           "type": "group",
+          "name": "m3_RBV",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "ymir_nicos_devices",
+                "source": "m1",
+                "writer_module": "f142"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
           "name": "freia_events",
           "children": [
             {
