@@ -113,11 +113,9 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                 pv = stream["channel_name"]
                 pvs_read.append(pv)
                 if pv in issued:
-                    forwarding = is_forwarding(issued[pv][0], issued[pv][1],
-                        stream["converters"])
+                    forwarding = is_forwarding(issued[pv][0], issued[pv][1], stream["converters"])
                     if not forwarding:
                         not_forwarded.append(pv)
-
             not_forwarded += [pv for pv in issued if pv not in pvs_read]
             return not_forwarded
 
@@ -161,13 +159,17 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                                       topic or self.instpvtopic,
                 Protocol.Protocol.CA, ) for pv, (topic, schema) in
                 pv_details.items()]
-            self._issued.update({pv: (topic, schema) for pv, (topic, schema) in
-                pv_details.items()})  # update issued
+            self._issued.update(
+                {pv: (topic or self.instpvtopic, schema or self.instpvschema) 
+                 for pv, (topic, schema) in pv_details.items()})  # update issued
         except KeyError as e:
             self.log.warning(e)
             return
         buff = serialise_rf5k(config_change, streams)
         self.send(self.cmdtopic, buff)
+    
+    def pv_forwarding_info(self, pv):
+        return self._issued.get(pv, None)
 
     def reissue(self):
         self.add(self._issued)
@@ -255,7 +257,7 @@ class EpicsKafkaForwarder(KafkaStatusHandler):
         non-empty value only if the forwarder_control is present.
         """
         if self._attached_forwarder_control:
-            return self._attached_forwarder_control.self._notforwarding
+            return self._attached_forwarder_control._notforwarding
         return None
 
     def add(self, pv_details):
