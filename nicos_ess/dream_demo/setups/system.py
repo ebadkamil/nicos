@@ -41,6 +41,22 @@ devices = dict(
         path=None,
         minfree=5,
     ),
+
+    KafkaForwarderStatus=device(
+        'nicos_ess.devices.forwarder.EpicsKafkaForwarder',
+        description='Monitors the status of the Forwarder',
+        statustopic="status_topic",
+        forwarder_control="KafkaForwarderControl",
+        brokers=["localhost"],
+    ),
+
+    KafkaForwarderControl=device(
+        'nicos_ess.devices.forwarder.EpicsKafkaForwarderControl',
+        description='Controls the Forwarder',
+        cmdtopic="TEST_forwarderConfig",
+        instpvtopic="pv_topic",
+        brokers=["localhost"],
+    ),
 )
 
 startupcode = '''
