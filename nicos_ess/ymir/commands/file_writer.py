@@ -15,7 +15,7 @@ class StartStopWriting:
     def __init__(self):
         super().__init__()
         self.handler = None
-        self.job_id = None
+        self.job_id = ""
 
     def _set_handler(self, handler_value):
         self.handler = handler_value
@@ -52,7 +52,9 @@ class StartStopWriting:
             with wait_before(5):
                 # Validate once if the FileWriter indeed started.
                 if not self._validate_write_process():
-                    session.log.error('Write job could not be validated.')
+                    session.log.error('Write job could not be validated. '
+                                      'Please check if FileWriter is up and '
+                                      'running.')
                     # We do not wanna disturb other parts of the script or
                     # series of commands if writing cannot be validated. Thus
                     # if that is the case we shall just return after the
@@ -68,16 +70,26 @@ class StartStopWriting:
         Stops the write job and update the handler status so that a new job can
         be started without an issue.
         """
+        job_id = self._get_id()
+        if job_id == "":
+            session.log.error('There is no write job in process. Nothing to '
+                              'stop.')
+            return
         _stop = StopFileWriter(self._get_handler(), self._get_id())
         # Stop the write process.
-        _stop.stop_job()
-        # Update the status so that File Writer can be restarted for a new job.
-        device = session.getDevice('FileWriterParameters')
-        if _stop.get_status() is None:
-            # By default, if there is no write job, the FileWriterControl
-            # returns a None, validating we have successfully stopped, so we can
-            # safely assign an empty string to the cache.
-            device.set_job_id("")
+        stop_call = _stop.stop_job()
+        if stop_call:
+            # Update the status so that File Writer can be restarted for
+            # a new job.
+            device = session.getDevice('FileWriterParameters')
+            if _stop.get_status() is None:
+                # By default, if there is no write job, the FileWriterControl
+                # returns a None, validating we have successfully stopped,
+                # so we can safely assign an empty string to the cache.
+                device.set_job_id("")
+                # Set it internally as a direct call to stop does not
+                # communicate with the device.
+                self._set_id("")
 
     def _validate_write_process(self):
         handler = self._get_handler()

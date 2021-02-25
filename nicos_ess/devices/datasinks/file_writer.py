@@ -27,16 +27,16 @@ class FileWriterStatus(KafkaStatusHandler):
 class FileWriterParameters(Device):
     parameters = {
         'broker': Param('List of kafka hosts to be connected to',
-            type=listof(host(defaultport=9092)),
-            default=['localhost'], preinit=True, userparam=False),
+                        type=listof(host(defaultport=9092)),
+                        default=['localhost'], preinit=True, userparam=False),
         'command_topic': Param(
             'Kafka topic where status messages are written',
             type=str, settable=False, preinit=True, mandatory=True,
             userparam=False,),
         'nexus_config_path': Param('NeXus configuration file (full-path)',
-            type=str, mandatory=True, userparam=False,),
+                                   type=str, mandatory=True, userparam=False,),
         'job_id': Param('Writer job identification',
-            type=str, mandatory=False, userparam=False,),
+                        type=str, mandatory=False, userparam=False,),
     }
 
     def set_job_id(self, val):

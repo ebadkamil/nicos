@@ -45,7 +45,7 @@ class StartFileWriter(WriterBase):
         # Send the acquired job identifier to the Nicos Cache.
         self.device.set_job_id(self.job_id)
         wait_until_true([start_handler.is_done()])
-        session.log.info('Write job is started.')
+        session.log.info(f'Write job with <<ID: {self.job_id}>> is started.')
         return True
 
     def get_handler(self):
@@ -64,13 +64,15 @@ class StopFileWriter(WriterBase):
     def __init__(self, handler, _id):
         super().__init__()
         self.job_handler = handler
-        self.id = _id
+        self.job_id = _id
 
     def stop_job(self):
         stop_handler = self.job_handler.stop_now()
         wait_until_true([stop_handler.is_done(),
                         self.job_handler.is_done()])
-        session.log.info('Write job is stopped.')
+        session.log.info(f'Write job with job <<ID: {self.job_id}>> '
+                         f'is stopped.')
+        return True
 
     def get_status(self):
-        return self.command_channel.get_job_status(self.id)
+        return self.command_channel.get_job_status(self.job_id)
