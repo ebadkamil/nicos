@@ -4,7 +4,7 @@ from file_writer_control.WriteJob import WriteJob
 from file_writer_control.JobHandler import JobHandler
 from datetime import datetime
 
-from nicos_ess.utilities.managers import wait_until_true
+from nicos_ess.utilities.managers import wait_until_true, wait_after
 
 
 class WriterBase:
@@ -26,7 +26,7 @@ class StartFileWriter(WriterBase):
 
         self.job_handler = JobHandler(worker_finder=self.command_channel)
         self.write_job = None
-        self.job_id = None
+        self.job_id = ""
 
     def start_job(self):
         with open(self.config, "r") as f:
@@ -67,11 +67,22 @@ class StopFileWriter(WriterBase):
         self.job_id = _id
 
     def stop_job(self):
+        if self.job_handler is None:
+            # This can happen if Nicos is restarted while a write job is in
+            # process. In that case we retrieve the ID from the cache and
+            # then create a new handler for it.
+            with wait_after(5):
+                # We shall wait five seconds after the creation of
+                # a new handler to ensure proper communication between
+                # FileWriter and the Control Library.
+                self.job_handler = JobHandler(
+                    worker_finder=self.command_channel, job_id=self.job_id)
         stop_handler = self.job_handler.stop_now()
         wait_until_true([stop_handler.is_done(),
                         self.job_handler.is_done()])
         session.log.info(f'Write job with job <<ID: {self.job_id}>> '
-                         f'is stopped.')
+                         f'is stopped. Wait for confirmation'
+                         f' to start a new job.')
         return True
 
     def get_status(self):

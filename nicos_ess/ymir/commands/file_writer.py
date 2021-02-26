@@ -13,7 +13,6 @@ class StartStopWriting:
     user commands should be done here.
     """
     def __init__(self):
-        super().__init__()
         self.handler = None
         self.job_id = ""
 
@@ -70,6 +69,11 @@ class StartStopWriting:
         Stops the write job and update the handler status so that a new job can
         be started without an issue.
         """
+        # We set the job ID from the cache in case Nicos is restarted while
+        # write job was in process. In this case, one needs a direct call to
+        # stop without starting it.
+        device = session.getDevice('FileWriterParameters')
+        self._set_id(device.get_job_id())
         job_id = self._get_id()
         if job_id == "":
             session.log.error('There is no write job in process. Nothing to '
@@ -81,15 +85,15 @@ class StartStopWriting:
         if stop_call:
             # Update the status so that File Writer can be restarted for
             # a new job.
-            device = session.getDevice('FileWriterParameters')
-            if _stop.get_status() is None:
-                # By default, if there is no write job, the FileWriterControl
-                # returns a None, validating we have successfully stopped,
-                # so we can safely assign an empty string to the cache.
-                device.set_job_id("")
-                # Set it internally as a direct call to stop does not
-                # communicate with the device.
-                self._set_id("")
+            device.set_job_id("")
+            # Set it internally as a direct call to stop does not
+            # communicate with the device. This is needed if a job started
+            # and stopped before another call to the stop.
+            self._set_id("")
+            with wait_before(1):
+                # Just to make sure everything is properly reset
+                # by the Control library, as well.
+                session.log.info('A new write job can now be started.')
 
     def _validate_write_process(self):
         handler = self._get_handler()
