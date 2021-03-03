@@ -46,7 +46,7 @@ class StartFileWriter(WriterBase):
     It assumes a corresponding Kafka broker is up and running along with FW.
     """
     def __init__(self):
-        super().__init__()
+        WriterBase.__init__(self)
 
         self.job_handler = JobHandler(worker_finder=self.command_channel)
         self.write_job = None
@@ -86,7 +86,7 @@ class StopFileWriter(WriterBase):
     to prevent any false initiations of write job.
     """
     def __init__(self, handler, _id):
-        super().__init__()
+        WriterBase.__init__(self)
         self.job_handler = handler
         self.job_id = _id
 
