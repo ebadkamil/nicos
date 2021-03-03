@@ -64,11 +64,17 @@ def wait_until_true(conditions, max_call_count=61, sleep_duration=1):
 
 @contextmanager
 def wait_before(wait_time=1):
+    """
+    Sleep for a given time before yielding.
+    """
     time.sleep(wait_time)
     yield
 
 
 @contextmanager
 def wait_after(wait_time=1):
+    """
+    Sleep for a given time after yielding.
+    """
     yield
     time.sleep(wait_time)
