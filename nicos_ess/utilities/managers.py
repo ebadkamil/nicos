@@ -47,7 +47,7 @@ def wait_until_true(conditions, max_call_count=61, sleep_duration=1):
     for condition in conditions:
         if not isinstance(condition, bool):
             raise TypeError('The elements should be boolean valued.')
-    if len(conditions) == 0:
+    if not conditions:
         raise ValueError('There should be at least one condition to be'
                          'satisfied.')
 
