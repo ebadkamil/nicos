@@ -49,7 +49,6 @@ class StartFileWriter(WriterBase):
         WriterBase.__init__(self)
 
         self.job_handler = JobHandler(worker_finder=self.command_channel)
-        self.write_job = None
         self.job_id = ""
 
     def start_job(self):
@@ -57,15 +56,15 @@ class StartFileWriter(WriterBase):
             # Get the nexus structure from config.
             nexus_structure = f.read()
         # Initialise the write job.
-        self.write_job = WriteJob(
+        write_job = WriteJob(
             nexus_structure,
             "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(datetime.now()),
             self.host,
             datetime.now(),
         )
         # Start.
-        start_handler = self.job_handler.start_job(self.write_job)
-        self.job_id = self.write_job.job_id
+        start_handler = self.job_handler.start_job(write_job)
+        self.job_id = write_job.job_id
         # Send the acquired job identifier to the Nicos Cache.
         self.device.set_job_id(self.job_id)
         wait_until_true([start_handler.is_done()])
