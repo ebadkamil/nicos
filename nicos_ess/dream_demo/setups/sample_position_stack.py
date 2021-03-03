@@ -4,6 +4,7 @@ prefix = "IOC"
 devices = dict(
     pos_x=device(
         'nicos_ess.devices.epics.pva.EpicsMotor',
+        unit='mm',
         epicstimeout=3.0,
         precision=0.1,
         description='X axis alignment',
@@ -11,6 +12,7 @@ devices = dict(
     ),
     pos_y=device(
         'nicos_ess.devices.epics.pva.EpicsMotor',
+        unit='mm',
         epicstimeout=3.0,
         precision=0.1,
         description='Y axis alignment',
@@ -18,6 +20,7 @@ devices = dict(
     ),
     pos_z=device(
         'nicos_ess.devices.epics.pva.EpicsMotor',
+        unit='mm',
         epicstimeout=3.0,
         precision=0.1,
         description='Z axis alignment',
