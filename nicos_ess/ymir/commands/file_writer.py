@@ -60,7 +60,7 @@ class StartStopWriting:
         self._set_id(device.get_job_id())
         if not self._get_id() is "":
             session.log.warning(
-                'A write process is already running. To start a new'
+                'A write process is already running. To start a new '
                 'job, please stop the current one.')
             return
         writer = StartFileWriter()
@@ -100,8 +100,8 @@ class StartStopWriting:
         self._set_id(device.get_job_id())
         job_id = self._get_id()
         if job_id == "":
-            session.log.error('There is no write job in process. Nothing to '
-                              'stop.')
+            session.log.warning('There is no write job in process. Nothing to '
+                                'stop.')
             return
         _stop = StopFileWriter(self._get_handler(), self._get_id())
         # Stop the write process.
