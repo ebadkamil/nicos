@@ -9,7 +9,7 @@ sysconfig = dict(
     datasinks=['conssink', 'filesink', 'daemonsink', 'liveview'],
 )
 
-modules = ['nicos.commands.standard', 'nicos_ess.commands.epics']
+modules = ['nicos.commands.standard', 'nicos_ess.commands.epics', 'nicos_ess.v20.commands.filewriter']
 
 devices = dict(
     DREAM=device('nicos.devices.instrument.Instrument',
@@ -57,6 +57,23 @@ devices = dict(
         cmdtopic="TEST_forwarderConfig",
         instpvtopic="pv_topic",
         brokers=["localhost"],
+    ),
+
+    NexusDataSink=device(
+        'nicos_ess.devices.datasinks.nexussink.NexusFileWriterSink',
+        description='Sink for NeXus file writer (kafka-to-nexus)',
+        brokers=['localhost:9092'],
+        cmdtopic='FileWriter_writerCommand',
+        status_provider='NexusFileWriter',
+        templatesmodule='nicos_ess.dream_demo.nexus.nexus_templates',
+        templatename='dream_default',
+    ),
+
+    NexusFileWriter=device(
+        'nicos_ess.devices.datasinks.nexussink.NexusFileWriterStatus',
+        description='Status for nexus file writing',
+        brokers=['localhost:9092'],
+        statustopic='FileWriter_writerStatus',
     ),
 )
 
