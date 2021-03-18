@@ -9,7 +9,13 @@ devices = dict(
         grouproles = {
             'reseda': 'admin',
             'ictrl': 'admin',
-        }
+        },
+    ),
+    UserDBAuth = device('nicos_mlz.devices.ghost.Authenticator',
+         description = 'FRM II user office authentication',
+         instrument = 'RESEDA',
+         ghosthost = 'ghost.mlz-garching.de',
+         loglevel = 'info',
     ),
     Auth = device('nicos.services.daemon.auth.list.Authenticator',
         hashing = 'md5',
@@ -22,6 +28,7 @@ devices = dict(
     Daemon = device('nicos.services.daemon.NicosDaemon',
         server = '0.0.0.0',
         authenticators = [
+            'UserDBAuth',
             'LDAPAuth',
             'Auth',
         ],
