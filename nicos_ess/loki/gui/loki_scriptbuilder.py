@@ -2,38 +2,50 @@ from functools import partial
 
 from nicos.clients.gui.panels import Panel
 from nicos.clients.gui.utils import loadUi
-from nicos.guisupport.qt import pyqtSlot, QTableWidgetItem, QHeaderView, \
-    Qt, QShortcut, QKeySequence, QApplication
+from nicos.guisupport.qt import QApplication, QHeaderView, QKeySequence, \
+    QLineEdit, QShortcut, QStyledItemDelegate, Qt, QTableWidgetItem, \
+    pyqtSlot
+from nicos.guisupport.utils import DoubleValidator
 from nicos.utils import findResource
 
-TABLE_QSS = 'alternate-background-color: aliceblue;'
+
+class DoubleDelegate(QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        editor.setValidator(DoubleValidator(self))
+        return editor
+
+    def setModelData(self, editor, model, index):
+        text = editor.text()
+        model.setData(index, text, Qt.EditRole)
+
+
+TABLE_QSS = "alternate-background-color: aliceblue;"
 
 
 class LokiScriptBuilderPanel(Panel):
     def __init__(self, parent, client, options):
         Panel.__init__(self, parent, client, options)
-        loadUi(self,
-               findResource('nicos_ess/loki/gui/ui_files/loki_scriptbuilder.ui')
-               )
+        loadUi(self, findResource("nicos_ess/loki/gui/ui_files/loki_scriptbuilder.ui"))
 
         self.window = parent
 
-        self.trans_options = ['TRANS First', 'SANS First', 'Simultaneous']
+        self.trans_options = ["TRANS First", "SANS First", "Simultaneous"]
 
-        self.duration_options = ['Mevents', 'seconds', 'frames']
+        self.duration_options = ["Mevents", "seconds", "frames"]
 
         self.permanent_columns = {
-            'position': 'Position',
-            'sample': 'Sample',
-            'thickness': 'Thickness\n(mm)',
-            'trans_duration': 'TRANS Duration',
-            'sans_duration': 'SANS Duration'
+            "position": "Position",
+            "sample": "Sample",
+            "thickness": "Thickness\n(mm)",
+            "trans_duration": "TRANS Duration",
+            "sans_duration": "SANS Duration",
         }
 
         self.optional_columns = {
-            'temperature': ('Temperature', self.chkShowTempColumn),
-            'pre-command': ('Pre-command', self.chkShowPreCommand),
-            'post-command': ('Post-command', self.chkShowPostCommand)
+            "temperature": ("Temperature", self.chkShowTempColumn),
+            "pre-command": ("Pre-command", self.chkShowPreCommand),
+            "post-command": ("Post-command", self.chkShowPostCommand),
         }
 
         self.columns_in_order = [name for name in self.permanent_columns.keys()]
@@ -55,44 +67,58 @@ class LokiScriptBuilderPanel(Panel):
         for name, details in self.optional_columns.items():
             _, checkbox = details
             checkbox.stateChanged.connect(
-                partial(self._on_optional_column_toggled, name))
+                partial(self._on_optional_column_toggled, name)
+            )
             self._hide_column(name)
 
         # Configure duration type combo-boxes
-        self._link_duration_combobox_to_column('sans_duration',
-                                               self.comboSansDurationType)
-        self._link_duration_combobox_to_column('trans_duration',
-                                               self.comboTransDurationType)
+        self._link_duration_combobox_to_column(
+            "sans_duration", self.comboSansDurationType
+        )
+        self._link_duration_combobox_to_column(
+            "trans_duration", self.comboTransDurationType
+        )
 
         # Set up trans order combo-box
         self.comboTransOrder.addItems(self.trans_options)
 
         # General table formatting
         self.tableScript.horizontalHeader().setStretchLastSection(True)
-        self.tableScript.horizontalHeader().setSectionResizeMode(
-            QHeaderView.Stretch)
+        self.tableScript.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableScript.resizeColumnsToContents()
         self.tableScript.setAlternatingRowColors(True)
         self.tableScript.setStyleSheet(TABLE_QSS)
 
         self.tableScript.setRowCount(num_rows)
 
+        delegate = DoubleDelegate(self.tableScript)
+        self.tableScript.setItemDelegateForColumn(0, delegate)
+        self.tableScript.setItemDelegateForColumn(2, delegate)
+        self.tableScript.setItemDelegateForColumn(3, delegate)
+        self.tableScript.setItemDelegateForColumn(4, delegate)
+        self.tableScript.setItemDelegateForColumn(5, delegate)
+
         QShortcut(QKeySequence.Paste, self.tableScript).activated.connect(
-            self._handle_table_paste)
+            self._handle_table_paste
+        )
 
         QShortcut(QKeySequence.Cut, self.tableScript).activated.connect(
-            self._handle_cut_cells)
+            self._handle_cut_cells
+        )
 
         QShortcut(QKeySequence.Delete, self.tableScript).activated.connect(
-            self._handle_delete_cells)
+            self._handle_delete_cells
+        )
 
         # TODO: this doesn't work on a Mac? How about Linux?
         QShortcut(QKeySequence.Backspace, self.tableScript).activated.connect(
-            self._handle_delete_cells)
+            self._handle_delete_cells
+        )
 
         # TODO: Cannot do keyboard copy as it is ambiguous - investigate
         QShortcut(QKeySequence.Copy, self.tableScript).activated.connect(
-            self._handle_copy_cells)
+            self._handle_copy_cells
+        )
 
     @pyqtSlot()
     def on_cutButton_clicked(self):
@@ -158,14 +184,14 @@ class LokiScriptBuilderPanel(Panel):
 
     def _handle_delete_cells(self):
         for index in self.tableScript.selectionModel().selectedIndexes():
-            self._update_cell(index.row(), index.column(), '')
+            self._update_cell(index.row(), index.column(), "")
 
     def _handle_copy_cells(self):
         if len(self.tableScript.selectedRanges()) != 1:
             # Can only select one continuous region to copy
             return
         selected_data = self._extract_selected_data()
-        QApplication.instance().clipboard().setText('\n'.join(selected_data))
+        QApplication.instance().clipboard().setText("\n".join(selected_data))
 
     def _extract_selected_data(self):
         selected_data = []
@@ -177,13 +203,13 @@ class LokiScriptBuilderPanel(Panel):
                 continue
             if curr_row != index.row():
                 if row_data:
-                    selected_data.append('\t'.join(row_data))
+                    selected_data.append("\t".join(row_data))
                     row_data.clear()
                 curr_row = index.row()
             cell_text = self._get_cell_text(index.row(), index.column())
             row_data.append(cell_text)
         if row_data:
-            selected_data.append('\t'.join(row_data))
+            selected_data.append("\t".join(row_data))
             row_data.clear()
         return selected_data
 
@@ -191,7 +217,7 @@ class LokiScriptBuilderPanel(Panel):
         cell = self.tableScript.item(row, column)
         if cell:
             return cell.text()
-        return ''
+        return ""
 
     def _handle_table_paste(self):
         indices = []
@@ -206,8 +232,9 @@ class LokiScriptBuilderPanel(Panel):
             # Don't paste images etc.
             return
 
-        copied_table = [[x for x in row.split('\t')]
-                        for row in clipboard_text.splitlines()]
+        copied_table = [
+            [x for x in row.split("\t")] for row in clipboard_text.splitlines()
+        ]
 
         if len(copied_table) == 1 and len(copied_table[0]) == 1:
             # Only one value, so put it in all selected cells
@@ -235,9 +262,9 @@ class LokiScriptBuilderPanel(Panel):
     def _link_duration_combobox_to_column(self, column_name, combobox):
         combobox.addItems(self.duration_options)
         combobox.currentTextChanged.connect(
-            partial(self._on_duration_type_changed, column_name))
-        self._on_duration_type_changed(column_name,
-                                       combobox.currentText())
+            partial(self._on_duration_type_changed, column_name)
+        )
+        self._on_duration_type_changed(column_name, combobox.currentText())
 
     @pyqtSlot()
     def on_bulkUpdateButton_clicked(self):
@@ -252,7 +279,7 @@ class LokiScriptBuilderPanel(Panel):
     def on_clearTableButton_clicked(self):
         for row in range(self.tableScript.rowCount()):
             for column in range(self.tableScript.columnCount()):
-                self._update_cell(row, column, '')
+                self._update_cell(row, column, "")
 
     def _update_cell(self, row, column, new_value):
         item = self.tableScript.item(row, column)
@@ -277,8 +304,9 @@ class LokiScriptBuilderPanel(Panel):
 
     def _on_duration_type_changed(self, column_name, value):
         column_number = self.columns_in_order.index(column_name)
-        self._set_column_title(column_number,
-            f'{self.permanent_columns[column_name]}\n({value})')
+        self._set_column_title(
+            column_number, f"{self.permanent_columns[column_name]}\n({value})"
+        )
 
     def _set_column_title(self, index, title):
         self.tableScript.setHorizontalHeaderItem(index, QTableWidgetItem(title))
