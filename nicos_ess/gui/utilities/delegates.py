@@ -21,7 +21,17 @@ class Validators:
 
 
 class Delegate(QStyledItemDelegate):
+    """Delegate class
+
+    Validates columns of a QTableWidget
+    """
     def __init__(self, owner, validator_type):
+        """
+        Attributes:
+        -----------
+            validator_type (Validators):
+                for eg. Validators.integer
+        """
         super().__init__(owner)
         self.validator_type = validator_type
 
