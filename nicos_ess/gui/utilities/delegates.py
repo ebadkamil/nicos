@@ -1,5 +1,5 @@
-from nicos.guisupport.qt import QLineEdit, QStyledItemDelegate, QIntValidator, \
-    QDoubleValidator, Qt, QRegExpValidator, QRegExp
+from nicos.guisupport.qt import QDoubleValidator, QIntValidator, QLineEdit, \
+    QRegExp, QRegExpValidator, QStyledItemDelegate, Qt
 
 
 class Validators:
@@ -11,14 +11,13 @@ class Validators:
     class PDoubleValidator(QDoubleValidator):
         def __init__(self, parent=None):
             super().__init__(parent=parent)
-            self.setBottom(0.)
-
+            self.setBottom(0.0)
 
     integer = QIntValidator()
     pinteger = PIntValidator()
     double = QDoubleValidator()
     pdouble = PDoubleValidator()
-    string = QRegExpValidator(QRegExp('^(?!\s*$).+'))
+    string = QRegExpValidator(QRegExp("^(?!\s*$).+"))
 
 
 class Delegate(QStyledItemDelegate):
@@ -34,4 +33,3 @@ class Delegate(QStyledItemDelegate):
     def setModelData(self, editor, model, index):
         text = editor.text()
         model.setData(index, text, Qt.EditRole)
-

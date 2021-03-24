@@ -2,19 +2,11 @@ from functools import partial
 
 from nicos.clients.gui.panels import Panel
 from nicos.clients.gui.utils import loadUi
-from nicos.guisupport.qt import (
-    QApplication,
-    QHeaderView,
-    QKeySequence,
-    QLineEdit,
-    QShortcut,
-    Qt,
-    QTableWidgetItem,
-    pyqtSlot,
-)
-from nicos_ess.loki.gui.delegates import Delegate, Validators
+from nicos.guisupport.qt import QApplication, QHeaderView, QKeySequence, \
+    QLineEdit, QShortcut, Qt, QTableWidgetItem, pyqtSlot
 from nicos.utils import findResource
 
+from nicos_ess.gui.utilities.delegates import Delegate, Validators
 
 TABLE_QSS = "alternate-background-color: aliceblue;"
 
@@ -87,12 +79,18 @@ class LokiScriptBuilderPanel(Panel):
 
         self.tableScript.setRowCount(num_rows)
 
-        delegate = Delegate(self.tableScript, Validators.pinteger)
-        self.tableScript.setItemDelegateForColumn(0, delegate)
-        self.tableScript.setItemDelegateForColumn(2, delegate)
-        self.tableScript.setItemDelegateForColumn(3, delegate)
-        self.tableScript.setItemDelegateForColumn(4, delegate)
-        self.tableScript.setItemDelegateForColumn(5, delegate)
+        self.tableScript.setItemDelegateForColumn(
+            0, Delegate(self.tableScript, Validators.double))
+        self.tableScript.setItemDelegateForColumn(
+            1, Delegate(self.tableScript, Validators.string))
+        self.tableScript.setItemDelegateForColumn(
+            2, Delegate(self.tableScript, Validators.pdouble))
+        self.tableScript.setItemDelegateForColumn(
+            3, Delegate(self.tableScript, Validators.pdouble))
+        self.tableScript.setItemDelegateForColumn(
+            4, Delegate(self.tableScript, Validators.pdouble))
+        self.tableScript.setItemDelegateForColumn(
+            5, Delegate(self.tableScript, Validators.double))
 
         QShortcut(QKeySequence.Paste, self.tableScript).activated.connect(
             self._handle_table_paste
