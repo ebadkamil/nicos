@@ -2,22 +2,18 @@ from functools import partial
 
 from nicos.clients.gui.panels import Panel
 from nicos.clients.gui.utils import loadUi
-from nicos.guisupport.qt import QApplication, QHeaderView, QKeySequence, \
-    QLineEdit, QShortcut, QStyledItemDelegate, Qt, QTableWidgetItem, \
-    pyqtSlot
-from nicos.guisupport.utils import DoubleValidator
+from nicos.guisupport.qt import (
+    QApplication,
+    QHeaderView,
+    QKeySequence,
+    QLineEdit,
+    QShortcut,
+    Qt,
+    QTableWidgetItem,
+    pyqtSlot,
+)
+from nicos_ess.loki.gui.delegates import Delegate, Validators
 from nicos.utils import findResource
-
-
-class DoubleDelegate(QStyledItemDelegate):
-    def createEditor(self, parent, option, index):
-        editor = QLineEdit(parent)
-        editor.setValidator(DoubleValidator(self))
-        return editor
-
-    def setModelData(self, editor, model, index):
-        text = editor.text()
-        model.setData(index, text, Qt.EditRole)
 
 
 TABLE_QSS = "alternate-background-color: aliceblue;"
@@ -91,7 +87,7 @@ class LokiScriptBuilderPanel(Panel):
 
         self.tableScript.setRowCount(num_rows)
 
-        delegate = DoubleDelegate(self.tableScript)
+        delegate = Delegate(self.tableScript, Validators.pinteger)
         self.tableScript.setItemDelegateForColumn(0, delegate)
         self.tableScript.setItemDelegateForColumn(2, delegate)
         self.tableScript.setItemDelegateForColumn(3, delegate)
