@@ -6,7 +6,7 @@ sysconfig = dict(
     cache='localhost',
     instrument='DREAM',
     experiment='Exp',
-    datasinks=['conssink', 'filesink', 'daemonsink', 'liveview'],
+    datasinks=['conssink', 'NexusDataSink', 'daemonsink', 'liveview'],
 )
 
 modules = ['nicos.commands.standard', 'nicos_ess.commands.epics', 'nicos_ess.v20.commands.filewriter']
@@ -24,7 +24,7 @@ devices = dict(
 
     Exp=device('nicos.devices.experiment.Experiment',
         description='experiment object',
-        dataroot='/opt/nicos-data',
+        dataroot='/home/ebadkamil',
         sendmail=False,
         serviceexp='p0',
         sample='Sample',
