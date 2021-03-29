@@ -22,8 +22,6 @@
 #
 # *****************************************************************************
 
-import json
-
 from streaming_data_types.fbschemas.forwarder_config_update_rf5k import Protocol, \
     UpdateType
 from streaming_data_types.forwarder_config_update_rf5k import StreamInfo, \
@@ -33,18 +31,6 @@ from nicos.core import Attach, Device, Param, oneof, status, usermethod
 
 from nicos_ess.devices.kafka.producer import ProducesKafkaMessages
 from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
-
-
-def is_forwarding(topic, schema, converters):
-    # Must check that the topic and schema match as the same PV could be
-    # forwarded multiple times with different settings.
-    for converter in converters:
-        full_uri = f'{converter["broker"]}/{converter["topic"]}'
-        name_present = converter["topic"] == topic or topic.endswith(full_uri)
-        schema_present = converter["schema"] == schema
-        if name_present and schema_present:
-            return True
-    return False
 
 
 class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
@@ -112,6 +98,7 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                 pv = stream["channel_name"]
                 pvs_read.append(pv)
                 if pv in issued:
+<<<<<<< HEAD
                     try:
                          # 'converters' key doesn't exist in stream. Legacy?
                         forwarding = is_forwarding(issued[pv][0], issued[pv][1],
@@ -119,6 +106,10 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                     except KeyError:
                         forwarding = issued[pv][0] == stream["output_topic"] and issued[pv][1] == stream["schema"]
 
+=======
+                    forwarding = (issued[pv][0] == stream["output_topic"] and
+                        issued[pv][1] == stream["schema"])
+>>>>>>> main
                     if not forwarding:
                         not_forwarded.append(pv)
             not_forwarded += [pv for pv in issued if pv not in pvs_read]
@@ -129,34 +120,6 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
 
         self.doStatus()
 
-    def add_legacy(self, pv_details):
-        """ Configure given PVs to start forwarding. Specific topics and
-        schemas can be provided. If not, default instrument topic and
-        schemas will be used.
-        :param pv_details: PVs and the tuple of (topic, schema)
-        :type pv_details: dict(pvname, (kafka-topic, schema))
-        """
-        streams = []
-        for pv in pv_details:
-            topic, schema = pv_details[pv]
-            if not topic:
-                topic = self.instpvtopic
-            if not schema:
-                schema = self.instpvschema
-
-            self._issued[pv] = (topic, schema)
-
-            for broker in self.brokers:
-                converter = {'topic': f'{broker}/{topic}', 'schema': schema, }
-                stream = {'converter': converter,
-                          'channel_provider_type': 'ca',
-                          'channel': pv, }
-                streams.append(stream)
-
-        cmd = {'cmd': 'add', 'streams': streams}
-
-        self.send(self.cmdtopic, json.dumps(cmd).encode())
-
     def add(self, pv_details):
         try:
             config_change = UpdateType.UpdateType.ADD
@@ -165,7 +128,11 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                 Protocol.Protocol.CA, ) for pv, (topic, schema) in
                 pv_details.items()]
             self._issued.update(
+<<<<<<< HEAD
                 {pv: (topic or self.instpvtopic, schema or self.instpvschema) 
+=======
+                {pv: (topic or self.instpvtopic, schema or self.instpvschema)
+>>>>>>> main
                  for pv, (topic, schema) in pv_details.items()})  # update issued
         except KeyError as e:
             self.log.warning(e)
@@ -173,6 +140,9 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
         buff = serialise_rf5k(config_change, streams)
         self.send(self.cmdtopic, buff)
     
+    def pv_forwarding_info(self, pv):
+        return self._issued.get(pv, None)
+
     def pv_forwarding_info(self, pv):
         return self._issued.get(pv, None)
 

@@ -55,6 +55,13 @@ class ExpPanel(Panel):
         self._new_exp_panel = None
         self._finish_exp_panel = None
 
+        # Setting up warning label so user remembers to press apply button.
+        self._defined_emails = self.notifEmails.toPlainText().strip()
+        self.num_experiment_props_opts = len(self._getProposalInput())
+        self.is_exp_props_edited = [False] * self.num_experiment_props_opts
+        self.applyWarningLabel.setStyleSheet('color: red')
+        self.applyWarningLabel.setVisible(False)
+
         # Additional dialog panels to pop up after NewExperiment() and before
         # FinishExperiment() respectively.
         self._new_exp_panel = options.get('new_exp_panel')
@@ -129,18 +136,19 @@ class ExpPanel(Panel):
         for control in self._text_controls:
             control.setText("")
         self.notifEmails.setPlainText("")
+        self.proposalNum.setText('')  # do not offer "service"
+        self.proposalID.setText('')
         self.setViewOnly(True)
+        self.applyWarningLabel.setVisible(False)
 
     def setViewOnly(self, is_view_only):
-        for button in self.buttonBox.buttons():
-            button.setEnabled(not is_view_only)
-
         for control in self._text_controls:
             control.setEnabled(not is_view_only)
 
         self.notifEmails.setEnabled(not is_view_only)
         self.errorAbortBox.setEnabled(not is_view_only)
         self.queryDBButton.setEnabled(not is_view_only)
+        self.applyBtn.setEnabled(not is_view_only)
 
     def on_client_experiment(self, data):
         # just reinitialize
@@ -158,7 +166,7 @@ class ExpPanel(Panel):
             local = mailaddress(self.localContact.text())
         except ValueError:
             QMessageBox.critical(self, 'Error', 'The local contact entry is '
-                                 'not  a valid email address')
+                                                'not  a valid email address')
             raise ConfigurationError('')
         emails = self.notifEmails.toPlainText().strip()
         emails = emails.split('\n') if emails else []
@@ -212,14 +220,8 @@ class ExpPanel(Panel):
             self.showInfo('Reading proposaldb failed for an unknown reason. '
                           'Please check logfiles....\n' + repr(e))
 
-    def on_buttonBox_clicked(self, button):
-        role = self.buttonBox.buttonRole(button)
-        if role == QDialogButtonBox.ApplyRole:
-            self.applyChanges()
-        elif role == QDialogButtonBox.RejectRole:
-            self.closeWindow()
-
-    def applyChanges(self):
+    @pyqtSlot()
+    def on_applyBtn_clicked(self):
         done = []
 
         # proposal settings
@@ -232,8 +234,9 @@ class ExpPanel(Panel):
 
         # check conditions
         if self.client.eval('session.experiment.serviceexp', True) and \
-           self.client.eval('session.experiment.proptype', 'user') == 'user' and \
-           self.client.eval('session.experiment.proposal', '') != prop:
+                self.client.eval('session.experiment.proptype',
+                                 'user') == 'user' and \
+                self.client.eval('session.experiment.proposal', '') != prop:
             self.showError('Can not directly switch experiments, please use '
                            'FinishExperiment first!')
             return
@@ -286,3 +289,42 @@ class ExpPanel(Panel):
                             'is currently running.')
             self.showInfo('\n'.join(done))
         self._update_proposal_info()
+        self._defined_emails = self.notifEmails.toPlainText().strip()
+        self.is_exp_props_edited = [False] * self.num_experiment_props_opts
+        self.applyWarningLabel.setVisible(False)
+
+    @pyqtSlot(str)
+    def on_proposalNum_textChanged(self, value):
+        self._apply_warning_status(value, 0)
+
+    @pyqtSlot(str)
+    def on_expTitle_textChanged(self, value):
+        self._apply_warning_status(value, 1)
+
+    @pyqtSlot(str)
+    def on_users_textChanged(self, value):
+        self._apply_warning_status(value, 2)
+
+    @pyqtSlot(str)
+    def on_localContact_textChanged(self, value):
+        self._apply_warning_status(value, 3)
+
+    @pyqtSlot()
+    def on_errorAbortBox_clicked(self):
+        value = 'abort' if self.errorAbortBox.isChecked() else 'report'
+        self._apply_warning_status(value, 4)
+
+    @pyqtSlot()
+    def on_notifEmails_textChanged(self):
+        value = self.notifEmails.toPlainText().strip()
+        self.is_exp_props_edited[5] = value != self._defined_emails
+        self._set_warning_visibility()
+
+    def _apply_warning_status(self, value, index):
+        self.is_exp_props_edited[index] = \
+            value != decodeAny(self._orig_proposal_info[index])
+        self._set_warning_visibility()
+
+    def _set_warning_visibility(self):
+        self.applyWarningLabel. \
+            setVisible(any(self.is_exp_props_edited))
