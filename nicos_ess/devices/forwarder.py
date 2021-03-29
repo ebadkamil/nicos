@@ -98,18 +98,8 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                 pv = stream["channel_name"]
                 pvs_read.append(pv)
                 if pv in issued:
-<<<<<<< HEAD
-                    try:
-                         # 'converters' key doesn't exist in stream. Legacy?
-                        forwarding = is_forwarding(issued[pv][0], issued[pv][1],
-                            stream["converters"])
-                    except KeyError:
-                        forwarding = issued[pv][0] == stream["output_topic"] and issued[pv][1] == stream["schema"]
-
-=======
                     forwarding = (issued[pv][0] == stream["output_topic"] and
                         issued[pv][1] == stream["schema"])
->>>>>>> main
                     if not forwarding:
                         not_forwarded.append(pv)
             not_forwarded += [pv for pv in issued if pv not in pvs_read]
@@ -128,18 +118,14 @@ class EpicsKafkaForwarderControl(ProducesKafkaMessages, Device):
                 Protocol.Protocol.CA, ) for pv, (topic, schema) in
                 pv_details.items()]
             self._issued.update(
-<<<<<<< HEAD
-                {pv: (topic or self.instpvtopic, schema or self.instpvschema) 
-=======
                 {pv: (topic or self.instpvtopic, schema or self.instpvschema)
->>>>>>> main
                  for pv, (topic, schema) in pv_details.items()})  # update issued
         except KeyError as e:
             self.log.warning(e)
             return
         buff = serialise_rf5k(config_change, streams)
         self.send(self.cmdtopic, buff)
-    
+
     def pv_forwarding_info(self, pv):
         return self._issued.get(pv, None)
 
