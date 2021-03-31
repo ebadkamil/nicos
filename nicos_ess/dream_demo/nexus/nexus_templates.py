@@ -11,7 +11,13 @@ dream_default = {
                     mod="f142",
                     dtype="double",
                 ),
-            }
+            },
+            "detector:NXdetector": {
+                "data:NXevent_data": {
+                    "data": EventStream('fake_events','just-bin-it',
+                                        'localhost:9092', dtype='uint32'),
+                },
+            },
         }
     }
 }
