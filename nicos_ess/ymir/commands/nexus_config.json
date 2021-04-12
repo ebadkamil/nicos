@@ -76,6 +76,20 @@
               }
             }
           ]
+        },
+        {
+          "type": "group",
+          "name": "PLC_senv_data",
+          "children": [
+            {
+              "type": "stream",
+              "stream": {
+                "topic": "Ymir_se",
+                "source": "PLC:stream:value",
+                "writer_module": "senv"
+              }
+            }
+          ]
         }
       ]
     }
