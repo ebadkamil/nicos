@@ -22,10 +22,19 @@
 #
 # *****************************************************************************
 
-from time import time as currenttime
-from nicos.core import Param, status, Device, host, listof
-from streaming_data_types import deserialise_x5f2
 import json
+from datetime import datetime
+from time import time as currenttime
+
+from file_writer_control.JobHandler import JobHandler
+from file_writer_control.WorkerCommandChannel import WorkerCommandChannel
+from file_writer_control.WriteJob import WriteJob
+from streaming_data_types import deserialise_x5f2
+
+from nicos import session
+from nicos.commands.basic import sleep
+from nicos.core import ADMIN, Device, Param, host, listof, requires, status
+
 from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
 
 
@@ -46,6 +55,92 @@ class FileWriterStatus(KafkaStatusHandler):
             next_update = currenttime() + self.statusinterval
             if next_update > self.nextupdate:
                 self._setROParam('nextupdate', next_update)
+
+
+class FileWriterControl(Device):
+    parameters = {
+        'broker': Param('List of kafka hosts to be connected',
+            type=listof(host(defaultport=9092)), mandatory=True, preinit=True,
+            userparam=False
+        ),
+        'command_topic': Param(
+            'Kafka topic where status messages are written',
+            type=str, settable=False, preinit=True, mandatory=True,
+            userparam=False,
+        ),
+        'nexus_config_path': Param('NeXus configuration file (full-path)',
+            type=str, mandatory=True, userparam=False,),
+        'job_id': Param('Writer job identification',
+            type=str, mandatory=False, userparam=False,
+            internal=True
+        ),
+        'ack_timeout': Param('How long to wait for timeout on acknowledgement',
+            type=int, default=5, unit='s', userparam=False,
+            settable=False,
+        ),
+    }
+
+    command_channel = None
+    job_handler = None
+
+    def doPreinit(self, mode):
+        self._set_job_id(self._cache.get(self.name, "job_id", default=''))
+        self.command_channel = \
+            WorkerCommandChannel(f'{self.broker[0]}/{self.command_topic}')
+        # If there is a job_id then this means the file-writer is currently
+        # writing
+        self.job_handler = JobHandler(worker_finder=self.command_channel,
+                                      job_id=self.job_id)
+
+    def doStart(self):
+        self.log.warning("doStart")
+        if self.job_id:
+            session.log.warning(
+                'A write job is already running. To start a new '
+                'job, please stop the current one.')
+            return
+
+        with open(self.nexus_config_path, "r") as f:
+            nexus_structure = f.read()
+
+        # Initialise the write job.
+        write_job = WriteJob(
+            nexus_structure,
+            "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(datetime.now()),
+            self.broker[0],
+            datetime.now(),
+        )
+
+        start_handler = self.job_handler.start_job(write_job)
+        self._set_job_id(write_job.job_id)
+
+        while not start_handler.is_done():
+            # TODO: timeout
+            sleep(10)
+
+        session.log.info(f'Writing job with ID {self.job_id} has started.')
+
+    def doStop(self):
+        self.log.warning("doStop")
+        if not self.job_id:
+            self.log.warning(
+                "Cannot stop file-writer job because the ID is unknown")
+            return
+
+        stop_handler = self.job_handler.stop_now()
+
+        while not stop_handler.is_done() and not self.job_handler.is_done():
+            # TODO: timeout
+            sleep(1)
+        session.log.info(f'Writing job with ID {self.job_id} has stopped')
+        self._set_job_id('')
+
+    @requires(level=ADMIN)
+    def reset_job_id(self, value=''):
+        self._set_job_id(value)
+
+    def _set_job_id(self, value):
+        self._setROParam('job_id', value)
 
 
 class FileWriterParameters(Device):
