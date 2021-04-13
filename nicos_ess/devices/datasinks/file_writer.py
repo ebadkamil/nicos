@@ -39,7 +39,6 @@ from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
 
 
 class FileWriterStatus(KafkaStatusHandler):
-
     def new_messages_callback(self, messages):
         key = max(messages.keys())
         if messages[key][4:8] == b"x5f2":
@@ -93,7 +92,6 @@ class FileWriterControl(Device):
                                       job_id=self.job_id)
 
     def doStart(self):
-        self.log.warning("doStart")
         if self.job_id:
             session.log.warning(
                 'A write job is already running. To start a new '
@@ -113,25 +111,32 @@ class FileWriterControl(Device):
 
         start_handler = self.job_handler.start_job(write_job)
         self._set_job_id(write_job.job_id)
+        timeout = int(currenttime()) + self.ack_timeout
 
         while not start_handler.is_done():
-            # TODO: timeout
-            sleep(10)
+            if int(currenttime()) > timeout:
+                session.log.error(f'Request to start writing job not'
+                                  'acknowledged by filewriter.')
+                return
+            sleep(0.1)
 
         session.log.info(f'Writing job with ID {self.job_id} has started.')
 
     def doStop(self):
-        self.log.warning("doStop")
         if not self.job_id:
             self.log.warning(
                 "Cannot stop file-writer job because the ID is unknown")
             return
 
         stop_handler = self.job_handler.stop_now()
+        timeout = int(currenttime()) + self.ack_timeout
 
         while not stop_handler.is_done() and not self.job_handler.is_done():
-            # TODO: timeout
-            sleep(1)
+            if int(currenttime()) > timeout:
+                session.log.error(f'Request to stop writing job not'
+                                  'acknowledged by filewriter.')
+                return
+            sleep(0.1)
         session.log.info(f'Writing job with ID {self.job_id} has stopped')
         self._set_job_id('')
 
@@ -141,25 +146,3 @@ class FileWriterControl(Device):
 
     def _set_job_id(self, value):
         self._setROParam('job_id', value)
-
-
-class FileWriterParameters(Device):
-    parameters = {
-        'broker': Param('List of kafka hosts to be connected to',
-                        type=listof(host(defaultport=9092)),
-                        default=['localhost'], preinit=True, userparam=False),
-        'command_topic': Param(
-            'Kafka topic where status messages are written',
-            type=str, settable=False, preinit=True, mandatory=True,
-            userparam=False,),
-        'nexus_config_path': Param('NeXus configuration file (full-path)',
-                                   type=str, mandatory=True, userparam=False,),
-        'job_id': Param('Writer job identification',
-                        type=str, mandatory=False, userparam=False,),
-    }
-
-    def set_job_id(self, val):
-        self._setROParam('job_id', val)
-
-    def get_job_id(self):
-        return self.job_id
