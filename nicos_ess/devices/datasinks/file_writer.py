@@ -41,7 +41,7 @@ from nicos_ess.devices.kafka.status_handler import KafkaStatusHandler
 class FileWriterStatus(KafkaStatusHandler):
     def new_messages_callback(self, messages):
         key = max(messages.keys())
-        if messages[key][4:8] == b"x5f2":
+        if messages[key][4:8] == b'x5f2':
             result = deserialise_x5f2(messages[key])
             _status = json.loads(result.status_json)
             self._setROParam(
@@ -83,7 +83,7 @@ class FileWriterControl(Device):
     job_handler = None
 
     def doPreinit(self, mode):
-        self._set_job_id(self._cache.get(self.name, "job_id", default=''))
+        self._set_job_id(self._cache.get(self.name, 'job_id', default=''))
         self.command_channel = \
             WorkerCommandChannel(f'{self.broker[0]}/{self.command_topic}')
         # If there is a job_id then this means the file-writer is currently
@@ -98,13 +98,13 @@ class FileWriterControl(Device):
                 'job, please stop the current one.')
             return
 
-        with open(self.nexus_config_path, "r") as f:
+        with open(self.nexus_config_path, 'r') as f:
             nexus_structure = f.read()
 
         # Initialise the write job.
         write_job = WriteJob(
             nexus_structure,
-            "{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs".format(datetime.now()),
+            '{0:%Y}-{0:%m}-{0:%d}_{0:%H}{0:%M}.nxs'.format(datetime.now()),
             self.broker[0],
             datetime.now(),
         )
@@ -125,7 +125,7 @@ class FileWriterControl(Device):
     def doStop(self):
         if not self.job_id:
             self.log.warning(
-                "Cannot stop file-writer job because the ID is unknown")
+                'Cannot stop file-writer job because the ID is unknown')
             return
 
         stop_handler = self.job_handler.stop_now()

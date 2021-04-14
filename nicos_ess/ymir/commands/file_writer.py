@@ -28,28 +28,30 @@ from nicos_ess.devices.datasinks.file_writer import FileWriterControl
 
 @usercommand
 def start_writing():
-    dev = _find_filewriter_device()
-    if dev:
-        dev.doStart()
-        return
-    session.log.error("Could not find file-writer control device")
+    dev = _get_filewriter_control_device()
+    dev.doStart()
 
 
 @usercommand
 def stop_writing():
-    dev = _find_filewriter_device()
-    if dev:
-        dev.doStop()
+    dev = _get_filewriter_control_device()
+    dev.doStop()
+
+
+def _get_filewriter_control_device():
+    devs = _find_nicos_devices_by_type(FileWriterControl)
+    if not devs:
+        session.log.error('Could not find file-writer control device')
         return
-    session.log.error("Could not find file-writer control device")
+    elif len(devs) > 1:
+        session.log.error('Found multiple file-writer control devices - ' 
+                          'incorrect system configuration? '
+                          'Ignoring request')
+        return
+    return devs[0]
 
 
-def _find_filewriter_device():
-    for dev in session.devices.values():
-        if isinstance(dev, FileWriterControl):
-            # Should be only one
-            return dev
-    return None
-
-
+def _find_nicos_devices_by_type(device_type):
+    return [dev for dev in session.devices.values()
+            if isinstance(dev, device_type)]
 
