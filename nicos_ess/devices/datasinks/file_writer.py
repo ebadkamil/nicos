@@ -98,8 +98,7 @@ class FileWriterControl(Device):
                 'job, please stop the current one.')
             return
 
-        with open(self.nexus_config_path, 'r') as f:
-            nexus_structure = f.read()
+        nexus_structure = self._read_nexus_config()
 
         # Initialise the write job.
         write_job = WriteJob(
@@ -121,6 +120,11 @@ class FileWriterControl(Device):
             sleep(0.1)
 
         session.log.info(f'Writing job with ID {self.job_id} has started.')
+
+    def _read_nexus_config(self):
+        with open(self.nexus_config_path, 'r') as f:
+            nexus_structure = f.read()
+        return nexus_structure
 
     def doStop(self):
         if not self.job_id:
