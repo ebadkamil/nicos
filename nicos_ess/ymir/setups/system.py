@@ -51,7 +51,7 @@ devices = dict(
     FileWriter=device(
         'nicos_ess.devices.datasinks.file_writer.FileWriterStatus',
         description='Status for file-writer',
-        broker=['172.30.242.20:9092'],
+        brokers=['172.30.242.20:9092'],
         statustopic='UTGARD_writerCommand',
         unit='',
     ),
