@@ -114,7 +114,7 @@ class FileWriterControl(Device):
 
         while not start_handler.is_done():
             if int(currenttime()) > timeout:
-                session.log.error(f'Request to start writing job not'
+                session.log.error(f'Request to start writing job not '
                                   'acknowledged by filewriter.')
                 return
             sleep(0.1)
