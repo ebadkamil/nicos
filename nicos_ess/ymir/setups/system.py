@@ -9,7 +9,8 @@ sysconfig = dict(
     datasinks=['conssink', 'filesink', 'daemonsink', 'liveview', ],
 )
 
-modules = ['nicos.commands.standard', 'nicos_ess.commands.epics', 'nicos_ess.ymir.commands.file_writer']
+modules = ['nicos.commands.standard', 'nicos_ess.commands.epics',
+           'nicos_ess.ymir.commands.file_writer']
 
 devices = dict(
     Skeleton=device('nicos.devices.instrument.Instrument',
@@ -50,18 +51,17 @@ devices = dict(
     FileWriter=device(
         'nicos_ess.devices.datasinks.file_writer.FileWriterStatus',
         description='Status for file-writer',
-        broker=['172.30.242.20:9092'],
+        broker=['localhost:9092'],
         statustopic='UTGARD_writerCommandStatus',
         unit='',
     ),
 
-    FileWriterParameters=device(
-        'nicos_ess.devices.datasinks.file_writer.FileWriterParameters',
-        description='File-writer parameters',
-        broker=['172.30.242.20:9092'],
+    FileWriterControl=device(
+        'nicos_ess.devices.datasinks.file_writer.FileWriterControl',
+        description='Control for file-writer',
+        broker=['localhost:9092'],
         command_topic='UTGARD_writerCommandStatus',
         nexus_config_path='nicos_ess/ymir/commands/nexus_config.json',
-        lowlevel=True,
     ),
 
 )
