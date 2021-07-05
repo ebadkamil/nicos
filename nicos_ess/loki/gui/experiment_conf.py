@@ -69,6 +69,14 @@ class LokiExperimentPanel(LokiPanelBase):
         self.sampleSetApply.setEnabled(False)
         self.instSetApply.setEnabled(False)
 
+        self.currentValueLabels = [
+            self.heightCurrent, self.posYCurrent, self.posXCurrent,
+            self.widthCurrent, self.offsetCurrent
+        ]
+
+        for label in self.currentValueLabels:
+            label.setVisible(False)
+
     def on_client_connected(self):
         LokiPanelBase.on_client_connected(self)
         self._set_cached_values_to_ui()
@@ -104,7 +112,28 @@ class LokiExperimentPanel(LokiPanelBase):
 
     def listen_instrument_settings(self):
         for box in self._get_editable_settings():
-            box.textChanged.connect(lambda: self.instSetApply.setEnabled(True))
+            box.textChanged.connect(self._instrument_settings_changed)
+
+        for box in self._get_editable_settings():
+            box.textEdited.connect(self._inform_current_instrument_values)
+
+    def _instrument_settings_changed(self):
+        self.instSetApply.setEnabled(True)
+
+    def _inform_current_instrument_values(self):
+        _settings_at_ui = [
+            self.apXBox.text(), self.apYBox.text(), self.apWBox.text(),
+            self.apHBox.text(), self.offsetBox.text()
+        ]
+        # print(_settings_at_ui)
+        print(self._get_cached_values_of_instrument_settings())
+        # print(self._get_current_values_of_instrument_settings())
+        for index, value in enumerate(self._get_current_values_of_instrument_settings()):
+            if float(value) not in self._get_cached_values_of_instrument_settings():
+                self.currentValueLabels[index].setText(str(self._get_cached_values_of_instrument_settings()[index]))
+                self.currentValueLabels[index].setVisible(True)
+            else:
+                self.currentValueLabels[index].setVisible(False)
 
     def _set_cached_values_to_ui(self):
         _cached_values = self._get_cached_values_of_instrument_settings()
