@@ -69,6 +69,7 @@ class LokiExperimentPanel(LokiPanelBase):
         self.sampleSetApply.setEnabled(False)
         self.instSetApply.setEnabled(False)
 
+        # Ordered according to the way that QT returns children.
         self.currentValueLabels = [
             self.heightCurrent, self.posYCurrent, self.posXCurrent,
             self.widthCurrent, self.offsetCurrent
