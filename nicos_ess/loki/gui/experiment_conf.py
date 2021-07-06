@@ -71,8 +71,8 @@ class LokiExperimentPanel(LokiPanelBase):
 
         # Ordered according to the way that QT returns children.
         self.currentValueLabels = [
-            self.heightCurrent, self.posYCurrent, self.posXCurrent,
-            self.widthCurrent, self.offsetCurrent
+            self.posXCurrent, self.posYCurrent, self.widthCurrent,
+            self.heightCurrent, self.offsetCurrent
         ]
 
         for label in self.currentValueLabels:
@@ -175,11 +175,10 @@ class LokiExperimentPanel(LokiPanelBase):
         return _box_values
 
     def _get_editable_settings(self):
-        _editable_settings = itertools.chain(
-                # QT returns the boxes in reverse order for some reason.
-                reversed(self.aptGroupBox.findChildren(QLineEdit)),
-                self.detGroupBox.findChildren(QLineEdit)
-            )
+        _editable_settings = [
+           self.apXBox, self.apYBox, self.apWBox,
+           self.apHBox, self.offsetBox
+        ]
         return _editable_settings
 
     def _is_empty(self):
