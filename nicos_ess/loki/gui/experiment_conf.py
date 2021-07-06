@@ -68,14 +68,13 @@ class LokiExperimentPanel(LokiPanelBase):
         self.sampleSetApply.setEnabled(False)
         self.instSetApply.setEnabled(False)
 
-        # Ordered according to the way that QT returns children.
+        # Labels that will show up when a value change to show currently cached.
         self.currentValueLabels = [
             self.posXCurrent, self.posYCurrent, self.widthCurrent,
             self.heightCurrent, self.offsetCurrent
         ]
 
-        for label in self.currentValueLabels:
-            label.setVisible(False)
+        self._disable_current_value_labels()
 
     def on_client_connected(self):
         LokiPanelBase.on_client_connected(self)
@@ -131,6 +130,10 @@ class LokiExperimentPanel(LokiPanelBase):
                 self.currentValueLabels[index].setVisible(True)
             else:
                 self.currentValueLabels[index].setVisible(False)
+
+    def _disable_current_value_labels(self):
+        for label in self.currentValueLabels:
+            label.setVisible(False)
 
     def _set_cached_values_to_ui(self):
         _cached_values = self._get_cached_values_of_instrument_settings()
@@ -219,3 +222,4 @@ class LokiExperimentPanel(LokiPanelBase):
             return
         self._set_ui_values_to_cache()
         self.instSetApply.setEnabled(False)
+        self._disable_current_value_labels()
