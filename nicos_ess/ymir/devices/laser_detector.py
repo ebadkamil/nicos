@@ -21,20 +21,15 @@
 #   Matt Clarke <matt.clarke@ess.eu>
 #
 # *****************************************************************************
-from nicos.core.params import Attach
 from nicos import session
-from nicos.core import Param, Value, status, tupleof
+from nicos.core import Param, Value
 from nicos.core.constants import LIVE
 from nicos.core.device import Measurable, Readable
-from nicos.devices.epics import pvget
+from nicos.core.params import Attach
 
 
 class LaserDetector(Measurable):
     parameters = {
-        'curstatus': Param('Store the current device status',
-                           internal=True, type=tupleof(int, str),
-                           default=(status.OK, ""),
-                           settable=True),
         'answer': Param('Store the current device status',
                         internal=True, type=float,
                         default=0,
@@ -43,10 +38,6 @@ class LaserDetector(Measurable):
     attached_devices = {
         'laser': Attach('the underlying laser device', Readable),
     }
-
-    def doPrepare(self):
-        self.curstatus = status.BUSY, "Preparing"
-        self.curstatus = status.OK, ""
 
     def doStart(self):
         max_pow = 0
@@ -62,13 +53,10 @@ class LaserDetector(Measurable):
         return [self.answer]
 
     def doFinish(self):
-        self._stop_processing()
-
-    def _stop_processing(self):
-        self.curstatus = status.OK, ""
+        pass
 
     def doSetPreset(self, t, **preset):
-        self.curstatus = status.BUSY, "Preparing"
+        pass
 
     def doStop(self):
         # Treat like a finish
