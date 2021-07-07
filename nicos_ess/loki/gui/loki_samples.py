@@ -167,5 +167,5 @@ class LokiSamplePanel(LokiPanelBase):
         self.optional_columns.update(created_data_dict)
         dialog.accept()
         parent_dialog.set_list_view(
-            created_data_dict.values(), checked=False
+            created_data_dict.values(), checked=True
         )
