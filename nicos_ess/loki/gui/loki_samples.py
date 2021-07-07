@@ -131,8 +131,21 @@ class LokiSamplePanel(LokiPanelBase):
             create_data_dialog.reject
         )
         create_data_dialog.createButtonBox.accepted.connect(
-            create_data_dialog.accept
+            lambda: self._update_optional_data(create_data_dialog)
         )
 
         if not create_data_dialog.exec_():
             return
+
+    def _update_optional_data(self, dialog):
+        column_name = dialog.nameCreatedData.text()
+        if dialog.unitCreatedData:
+            column_name = column_name + f' ({dialog.unitCreatedData.text()})'
+
+        _key = "_" + column_name
+        _value = column_name
+        created_data_dict = {
+            _key: _value
+        }
+        self.optional_columns.update(created_data_dict)
+        dialog.accept()
