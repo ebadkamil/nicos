@@ -47,7 +47,7 @@ class CreateSampleData(QDialog):
 
 class OptionalSampleData(QDialog):
 
-    def __init__(self, parent, client, optional_data, checked=False):
+    def __init__(self, parent, client, optional_data, checked):
         QDialog.__init__(self, parent)
         self.client = client
         loadUi(self, findResource('nicos_ess/loki/gui/'
@@ -55,18 +55,19 @@ class OptionalSampleData(QDialog):
                                   'loki_samples_optional_data.ui'))
 
         self.model = QStandardItemModel()
+        self.items_checked = checked
 
-        self.set_list_view(optional_data, checked)
+        self.set_list_view(optional_data)
 
         self.dialogButtonBox.rejected.connect(self.reject)
         self.dialogButtonBox.accepted.connect(self.accept)
 
-    def set_list_view(self, optional_data, checked):
+    def set_list_view(self, optional_data):
         for data in optional_data:
             item = QStandardItem(data)
             item.setCheckable(True)
-            check = Qt.Checked if checked else Qt.Unchecked
-            item.setCheckState(check)
+            if item.text() in self.items_checked:
+                item.setCheckState(Qt.Checked)
             self.model.appendRow(item)
         self.listView.setModel(self.model)
 
@@ -100,6 +101,8 @@ class LokiSamplePanel(LokiPanelBase):
         )
         self._init_table_panel()
 
+        self.checked_items = []
+
     def setViewOnly(self, viewonly):
         self.addOptionalDataButton.setEnabled(not viewonly)
         self.samplesTableView.setEnabled(not viewonly)
@@ -125,14 +128,29 @@ class LokiSamplePanel(LokiPanelBase):
 
     def _activate_optional_data_selection(self):
         optional_data_dialog = OptionalSampleData(
-            self, self.client, self.optional_columns.values()
+            self, self.client, self.optional_columns.values(),
+            self.checked_items
         )
 
         optional_data_dialog.createDataButton.clicked.connect(
             lambda: self._activate_create_sample_data(optional_data_dialog)
         )
+        optional_data_dialog.listView.clicked.connect(
+           lambda: self.list_view_check_changed(optional_data_dialog)
+        )
         if not optional_data_dialog.exec_():
             return
+
+    def list_view_check_changed(self, dialog):
+        model = dialog.listView.model()
+        items = [model.item(index) for index in range(model.rowCount())]
+        for item in items:
+            if item.checkState() == Qt.Checked and\
+                    item.text() not in self.checked_items:
+                self.checked_items.append(item.text())
+            if item.checkState() == Qt.Unchecked and\
+                    item.text() in self.checked_items:
+                self.checked_items.remove(item.text())
 
     def _activate_create_sample_data(self, dialog):
         create_data_dialog = CreateSampleData(self, self.client)
@@ -167,5 +185,5 @@ class LokiSamplePanel(LokiPanelBase):
         self.optional_columns.update(created_data_dict)
         dialog.accept()
         parent_dialog.set_list_view(
-            created_data_dict.values(), checked=True
+            created_data_dict.values()
         )
