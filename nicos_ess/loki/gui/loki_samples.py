@@ -81,6 +81,7 @@ class LokiSamplePanel(LokiPanelBase):
                findResource('nicos_ess/loki/gui/ui_files/loki_samples.ui')
                )
         self.window = parent
+        self.initialise_connection_status_listeners()
 
         self.permanent_columns = {
             'sample_name': 'Sample Name',
@@ -98,6 +99,10 @@ class LokiSamplePanel(LokiPanelBase):
             self._activate_optional_data_selection
         )
         self._init_table_panel()
+
+    def setViewOnly(self, viewonly):
+        self.addOptionalDataButton.setEnabled(not viewonly)
+        self.samplesTableView.setEnabled(not viewonly)
 
     def _init_table_panel(self):
         headers = [
@@ -161,7 +166,6 @@ class LokiSamplePanel(LokiPanelBase):
 
         self.optional_columns.update(created_data_dict)
         dialog.accept()
-        parent_dialog.clear_list()
         parent_dialog.set_list_view(
-            self.optional_columns.values(), checked=False
+            created_data_dict.values(), checked=False
         )
