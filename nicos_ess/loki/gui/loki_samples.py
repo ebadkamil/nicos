@@ -29,9 +29,34 @@ from nicos.clients.gui.utils import loadUi
 from nicos.utils import findResource
 from nicos_ess.loki.gui.loki_data_model import LokiDataModel
 from nicos_ess.loki.gui.loki_panel import LokiPanelBase
-from nicos.guisupport.qt import QHeaderView, QTableView
+from nicos.guisupport.qt import QHeaderView, QTableView, QDialog,\
+    QStandardItemModel, QStandardItem, Qt
 
 TABLE_QSS = 'alternate-background-color: aliceblue;'
+
+
+class OptionalSampleData(QDialog):
+
+    def __init__(self, parent, client, optional_data, checked=False):
+        QDialog.__init__(self, parent)
+        self.client = client
+        loadUi(self, findResource('nicos_ess/loki/gui/'
+                                  'ui_files/'
+                                  'loki_samples_optional_data.ui'))
+
+        self.model = QStandardItemModel()
+
+        for data in optional_data:
+            item = QStandardItem(data)
+            item.setCheckable(True)
+            check = Qt.Checked if checked else Qt.Unchecked
+            item.setCheckState(check)
+            self.model.appendRow(item)
+
+        self.listView.setModel(self.model)
+
+        self.dialogButtonBox.rejected.connect(self.reject)
+        self.dialogButtonBox.accepted.connect(self.accept)
 
 
 class LokiSamplePanel(LokiPanelBase):
@@ -51,12 +76,12 @@ class LokiSamplePanel(LokiPanelBase):
         self.optional_columns = {
             'background': 'Background',
             'comments': 'Comments',
-            'other': 'Other'
         }
 
         self.columns_in_order = list(self.permanent_columns.keys())
-        self.optionalComboBox.addItems(self.optional_columns.values())
-        self.optionalComboBox.setCurrentIndex(-1)
+        self.addOptionalDataButton.clicked.connect(
+            self._activate_optional_data_selection
+        )
         self._init_table_panel()
 
     def _init_table_panel(self):
@@ -77,3 +102,9 @@ class LokiSamplePanel(LokiPanelBase):
         self.samplesTableView.resizeColumnsToContents()
         self.samplesTableView.setAlternatingRowColors(True)
         self.samplesTableView.setStyleSheet(TABLE_QSS)
+
+    def _activate_optional_data_selection(self):
+        dialog = OptionalSampleData(self, self.client,
+                                    self.optional_columns.values())
+        if not dialog.exec_():
+            return
