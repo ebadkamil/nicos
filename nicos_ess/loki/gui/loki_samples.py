@@ -56,17 +56,22 @@ class OptionalSampleData(QDialog):
 
         self.model = QStandardItemModel()
 
+        self.set_list_view(optional_data, checked)
+
+        self.dialogButtonBox.rejected.connect(self.reject)
+        self.dialogButtonBox.accepted.connect(self.accept)
+
+    def set_list_view(self, optional_data, checked):
         for data in optional_data:
             item = QStandardItem(data)
             item.setCheckable(True)
             check = Qt.Checked if checked else Qt.Unchecked
             item.setCheckState(check)
             self.model.appendRow(item)
-
         self.listView.setModel(self.model)
 
-        self.dialogButtonBox.rejected.connect(self.reject)
-        self.dialogButtonBox.accepted.connect(self.accept)
+    def clear_list(self):
+        self.model.removeRows(0, self.model.rowCount())
 
 
 class LokiSamplePanel(LokiPanelBase):
@@ -119,33 +124,44 @@ class LokiSamplePanel(LokiPanelBase):
         )
 
         optional_data_dialog.createDataButton.clicked.connect(
-            self._activate_create_sample_data
+            lambda: self._activate_create_sample_data(optional_data_dialog)
         )
         if not optional_data_dialog.exec_():
             return
 
-    def _activate_create_sample_data(self):
+    def _activate_create_sample_data(self, dialog):
         create_data_dialog = CreateSampleData(self, self.client)
 
         create_data_dialog.createButtonBox.rejected.connect(
             create_data_dialog.reject
         )
         create_data_dialog.createButtonBox.accepted.connect(
-            lambda: self._update_optional_data(create_data_dialog)
+            lambda: self._update_optional_data(create_data_dialog, dialog)
         )
 
         if not create_data_dialog.exec_():
             return
 
-    def _update_optional_data(self, dialog):
+    def _update_optional_data(self, dialog, parent_dialog):
+        if not dialog.nameCreatedData.text():
+            return
+
         column_name = dialog.nameCreatedData.text()
-        if dialog.unitCreatedData:
-            column_name = column_name + f' ({dialog.unitCreatedData.text()})'
+        column_unit = dialog.unitCreatedData.text()
+        if column_unit:
+            column_name = column_name + f' ({column_unit})'
+        else:
+            column_name = column_name
 
         _key = "_" + column_name
         _value = column_name
         created_data_dict = {
             _key: _value
         }
+
         self.optional_columns.update(created_data_dict)
         dialog.accept()
+        parent_dialog.clear_list()
+        parent_dialog.set_list_view(
+            self.optional_columns.values(), checked=False
+        )
