@@ -35,6 +35,16 @@ from nicos.guisupport.qt import QHeaderView, QTableView, QDialog,\
 TABLE_QSS = 'alternate-background-color: aliceblue;'
 
 
+class CreateSampleData(QDialog):
+
+    def __init__(self, parent, client):
+        QDialog.__init__(self, parent)
+        self.client = client
+        loadUi(self, findResource('nicos_ess/loki/gui/'
+                                  'ui_files/'
+                                  'loki_create_sample_data.ui'))
+
+
 class OptionalSampleData(QDialog):
 
     def __init__(self, parent, client, optional_data, checked=False):
@@ -104,7 +114,25 @@ class LokiSamplePanel(LokiPanelBase):
         self.samplesTableView.setStyleSheet(TABLE_QSS)
 
     def _activate_optional_data_selection(self):
-        dialog = OptionalSampleData(self, self.client,
-                                    self.optional_columns.values())
-        if not dialog.exec_():
+        optional_data_dialog = OptionalSampleData(
+            self, self.client, self.optional_columns.values()
+        )
+
+        optional_data_dialog.createDataButton.clicked.connect(
+            self._activate_create_sample_data
+        )
+        if not optional_data_dialog.exec_():
+            return
+
+    def _activate_create_sample_data(self):
+        create_data_dialog = CreateSampleData(self, self.client)
+
+        create_data_dialog.createButtonBox.rejected.connect(
+            create_data_dialog.reject
+        )
+        create_data_dialog.createButtonBox.accepted.connect(
+            create_data_dialog.accept
+        )
+
+        if not create_data_dialog.exec_():
             return
