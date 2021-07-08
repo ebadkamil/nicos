@@ -194,17 +194,26 @@ class LokiSamplePanel(LokiPanelBase):
         )
 
     def _update_table_view(self, dialog):
-        if self.checked_items:
-            for item in self.checked_items:
-                if item not in self.headers:
-                    self.headers.append(item)
-        for item in self.headers:
-            if item not in list(self.permanent_columns.values())\
-                    + self.checked_items:
-                self.headers.remove(item)
+        self._add_optional_data()
+        self._partially_remove_optional_data()
+        self._remove_optional_data()
+        self._init_table_panel()
+        dialog.accept()
+
+    def _remove_optional_data(self):
         if not self.checked_items:
             for item in self.headers:
                 if item not in self.permanent_columns.values():
                     self.headers.remove(item)
-        self._init_table_panel()
-        dialog.accept()
+
+    def _partially_remove_optional_data(self):
+        for item in self.headers:
+            if item not in list(self.permanent_columns.values()) \
+                    + self.checked_items:
+                self.headers.remove(item)
+
+    def _add_optional_data(self):
+        if self.checked_items:
+            for item in self.checked_items:
+                if item not in self.headers:
+                    self.headers.append(item)
