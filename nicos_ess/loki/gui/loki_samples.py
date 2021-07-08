@@ -65,6 +65,7 @@ class OptionalSampleData(QDialog):
         for data in optional_data:
             item = QStandardItem(data)
             item.setCheckable(True)
+            item.setEditable(False)
             if item.text() in self.items_checked:
                 item.setCheckState(Qt.Checked)
             self.model.appendRow(item)
@@ -197,14 +198,13 @@ class LokiSamplePanel(LokiPanelBase):
             for item in self.checked_items:
                 if item not in self.headers:
                     self.headers.append(item)
-            for item in self.headers:
-                if item not in list(self.permanent_columns.values())\
-                        + self.checked_items:
-                    self.headers.remove(item)
-            self._init_table_panel()
+        for item in self.headers:
+            if item not in list(self.permanent_columns.values())\
+                    + self.checked_items:
+                self.headers.remove(item)
         if not self.checked_items:
             for item in self.headers:
                 if item not in self.permanent_columns.values():
                     self.headers.remove(item)
-            self._init_table_panel()
+        self._init_table_panel()
         dialog.accept()
