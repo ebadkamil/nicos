@@ -60,7 +60,6 @@ class OptionalSampleData(QDialog):
         self.set_list_view(optional_data)
 
         self.dialogButtonBox.rejected.connect(self.reject)
-        self.dialogButtonBox.accepted.connect(self.accept)
 
     def set_list_view(self, optional_data):
         for data in optional_data:
@@ -99,21 +98,22 @@ class LokiSamplePanel(LokiPanelBase):
         self.addOptionalDataButton.clicked.connect(
             self._activate_optional_data_selection
         )
-        self._init_table_panel()
+
+        self.headers = [
+            self.permanent_columns[name]
+            for name in self.columns_in_order
+        ]
 
         self.checked_items = []
+
+        self._init_table_panel()
 
     def setViewOnly(self, viewonly):
         self.addOptionalDataButton.setEnabled(not viewonly)
         self.samplesTableView.setEnabled(not viewonly)
 
     def _init_table_panel(self):
-        headers = [
-            self.permanent_columns[name]
-            for name in self.columns_in_order
-        ]
-
-        self.model = LokiDataModel(headers)
+        self.model = LokiDataModel(self.headers)
         self.samplesTableView.setModel(self.model)
         self._init_tableview_markups()
 
@@ -138,6 +138,10 @@ class LokiSamplePanel(LokiPanelBase):
         optional_data_dialog.listView.clicked.connect(
            lambda: self.list_view_check_changed(optional_data_dialog)
         )
+        optional_data_dialog.dialogButtonBox.accepted.connect(
+            lambda: self._update_table_view(optional_data_dialog)
+        )
+
         if not optional_data_dialog.exec_():
             return
 
@@ -187,3 +191,20 @@ class LokiSamplePanel(LokiPanelBase):
         parent_dialog.set_list_view(
             created_data_dict.values()
         )
+
+    def _update_table_view(self, dialog):
+        if self.checked_items:
+            for item in self.checked_items:
+                if item not in self.headers:
+                    self.headers.append(item)
+            for item in self.headers:
+                if item not in list(self.permanent_columns.values())\
+                        + self.checked_items:
+                    self.headers.remove(item)
+            self._init_table_panel()
+        if not self.checked_items:
+            for item in self.headers:
+                if item not in self.permanent_columns.values():
+                    self.headers.remove(item)
+            self._init_table_panel()
+        dialog.accept()
