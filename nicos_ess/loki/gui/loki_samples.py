@@ -194,11 +194,20 @@ class LokiSamplePanel(LokiPanelBase):
         )
 
     def _update_table_view(self, dialog):
+        table_data = self.model.table_data
         self._add_optional_data()
         self._partially_remove_optional_data()
         self._remove_optional_data()
-        self._init_table_panel()
+        self._data_preserving_init_table_panel(table_data)
         dialog.accept()
+
+    def _data_preserving_init_table_panel(self, table_data):
+        self._init_table_panel()
+        new_data = [
+            data + [''] * len(self.checked_items) for data in table_data
+        ]
+        self.model._table_data = new_data
+        self.model.layoutChanged.emit()
 
     def _remove_optional_data(self):
         if not self.checked_items:
