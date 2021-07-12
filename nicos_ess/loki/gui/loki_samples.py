@@ -201,14 +201,12 @@ class LokiSamplePanel(LokiPanelBase):
         self._partially_remove_optional_data()
         self._remove_optional_data()
         if len(table_data[0]) != len(self.model.table_data[0]):
-            self._data_preserving_init_table_panel(
-                self.model.table_data, table_headers
-            )
+            self._preserve_data(self.model.table_data, table_headers)
         else:
-            self._data_preserving_init_table_panel(table_data, table_headers)
+            self._preserve_data(table_data, table_headers)
         dialog.accept()
 
-    def _data_preserving_init_table_panel(self, table_data, _headers):
+    def _preserve_data(self, table_data, _headers):
         if self.new_column_added:
             net_change = len(self.headers) - _headers
             self.model.table_data = [
