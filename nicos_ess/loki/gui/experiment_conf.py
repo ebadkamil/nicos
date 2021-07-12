@@ -120,12 +120,12 @@ class LokiExperimentPanel(LokiPanelBase):
         self.instSetApply.setEnabled(True)
 
     def _inform_current_instrument_values(self):
-        _cached_values = self._get_cached_values_of_instrument_settings()
-        _ui_values = self._get_current_values_of_instrument_settings()
-        for index, value in enumerate(_ui_values):
-            if float(value) not in _cached_values:
+        cached_values = self._get_cached_values_of_instrument_settings()
+        ui_values = self._get_current_values_of_instrument_settings()
+        for index, value in enumerate(ui_values):
+            if float(value) not in cached_values:
                 self.currentValueLabels[index].setText(
-                    "Current value = " + str(_cached_values[index])
+                    "Current value = " + str(cached_values[index])
                 )
                 self.currentValueLabels[index].setVisible(True)
             else:
