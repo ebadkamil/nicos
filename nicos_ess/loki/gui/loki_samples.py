@@ -29,7 +29,7 @@ from nicos.clients.gui.utils import loadUi
 from nicos.utils import findResource
 from nicos_ess.loki.gui.loki_data_model import LokiDataModel
 from nicos_ess.loki.gui.loki_panel import LokiPanelBase
-from nicos.guisupport.qt import QHeaderView, QTableView, QDialog,\
+from nicos.guisupport.qt import QHeaderView, QTableView, QDialog, \
     QStandardItemModel, QStandardItem, Qt
 
 TABLE_QSS = 'alternate-background-color: aliceblue;'
@@ -106,6 +106,7 @@ class LokiSamplePanel(LokiPanelBase):
         ]
 
         self.checked_items = []
+        self.new_column_added = False
 
         self._init_table_panel()
 
@@ -137,7 +138,7 @@ class LokiSamplePanel(LokiPanelBase):
             lambda: self._activate_create_sample_data(optional_data_dialog)
         )
         optional_data_dialog.listView.clicked.connect(
-           lambda: self.list_view_check_changed(optional_data_dialog)
+            lambda: self.list_view_check_changed(optional_data_dialog)
         )
         optional_data_dialog.dialogButtonBox.accepted.connect(
             lambda: self._update_table_view(optional_data_dialog)
@@ -150,10 +151,10 @@ class LokiSamplePanel(LokiPanelBase):
         model = dialog.listView.model()
         items = [model.item(index) for index in range(model.rowCount())]
         for item in items:
-            if item.checkState() == Qt.Checked and\
+            if item.checkState() == Qt.Checked and \
                     item.text() not in self.checked_items:
                 self.checked_items.append(item.text())
-            if item.checkState() == Qt.Unchecked and\
+            if item.checkState() == Qt.Unchecked and \
                     item.text() in self.checked_items:
                 self.checked_items.remove(item.text())
 
@@ -195,30 +196,39 @@ class LokiSamplePanel(LokiPanelBase):
 
     def _update_table_view(self, dialog):
         table_data = self.model.table_data
+        table_headers = len(self.headers)
         self._add_optional_data()
         self._partially_remove_optional_data()
         self._remove_optional_data()
-        self._data_preserving_init_table_panel(table_data)
+        if len(table_data[0]) != len(self.model.table_data[0]):
+            self._data_preserving_init_table_panel(
+                self.model.table_data, table_headers
+            )
+        else:
+            self._data_preserving_init_table_panel(table_data, table_headers)
         dialog.accept()
 
-    def _data_preserving_init_table_panel(self, table_data):
-        self._init_table_panel()
-        new_data = [
-            data + [''] * len(self.checked_items) for data in table_data
-        ]
-        self.model._table_data = new_data
+    def _data_preserving_init_table_panel(self, table_data, _headers):
+        if self.new_column_added:
+            net_change = len(self.headers) - _headers
+            self.model.table_data = [
+                data + [''] * net_change for data in table_data
+            ]
+            self.new_column_added = False
         self.model.layoutChanged.emit()
 
     def _remove_optional_data(self):
         if not self.checked_items:
             for item in self.headers:
                 if item not in self.permanent_columns.values():
+                    self._delete_optional_data_entries(self.headers.index(item))
                     self.headers.remove(item)
 
     def _partially_remove_optional_data(self):
         for item in self.headers:
             if item not in list(self.permanent_columns.values()) \
                     + self.checked_items:
+                self._delete_optional_data_entries(self.headers.index(item))
                 self.headers.remove(item)
 
     def _add_optional_data(self):
@@ -226,3 +236,12 @@ class LokiSamplePanel(LokiPanelBase):
             for item in self.checked_items:
                 if item not in self.headers:
                     self.headers.append(item)
+                    self.new_column_added = True
+
+    def _delete_optional_data_entries(self, column_index):
+        number_of_rows = len(self.model.table_data)
+        table = self.model.table_data
+        for row in range(number_of_rows):
+            _data = table[row][column_index]
+            table[row].remove(_data)
+        self.model.table_data = table
