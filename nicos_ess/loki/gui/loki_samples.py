@@ -66,6 +66,8 @@ class OptionalSampleData(QDialog):
             item = QStandardItem(data)
             item.setCheckable(True)
             item.setEditable(False)
+            # Make sure already checked items stays checked upon re-loading
+            # the dialog.
             if item.text() in self.items_checked:
                 item.setCheckState(Qt.Checked)
             self.model.appendRow(item)
@@ -195,19 +197,28 @@ class LokiSamplePanel(LokiPanelBase):
         )
 
     def _update_table_view(self, dialog):
+        # Cache current data and headers so that that can be preserved if
+        # when we add or remove new column to the table.
         table_data = self.model.table_data
         table_headers = len(self.headers)
+
         self._add_optional_data()
         self._partially_remove_optional_data()
         self._remove_optional_data()
+
+        # Check if the table modified.
         if len(table_data[0]) != len(self.model.table_data[0]):
             self._preserve_data(self.model.table_data, table_headers)
         else:
             self._preserve_data(table_data, table_headers)
+
         dialog.accept()
 
     def _preserve_data(self, table_data, _headers):
         if self.new_column_added:
+            # We need to keep track of the net change in checked items to avoid
+            # duplication, i.e., if there are already checked items, they should
+            # not be count when a new addition has been made.
             net_change = len(self.headers) - _headers
             self.model.table_data = [
                 data + [''] * net_change for data in table_data
