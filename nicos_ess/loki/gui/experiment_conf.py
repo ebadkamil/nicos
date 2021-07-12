@@ -129,7 +129,7 @@ class LokiExperimentPanel(LokiPanelBase):
         cached_values = self._get_cached_values_of_instrument_settings()
         ui_values = self._get_current_values_of_instrument_settings()
         for index, value in enumerate(ui_values):
-            if float(value) not in cached_values:
+            if value == '' or float(value) not in cached_values:
                 self.currentValueLabels[index].setText(
                     "Current value = " + str(cached_values[index])
                 )
