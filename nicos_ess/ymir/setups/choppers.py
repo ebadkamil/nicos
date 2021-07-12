@@ -19,6 +19,7 @@ devices = dict(
         mapping={'Start chopper': 6,
                  'Stop chopper': 3,
                  'Reset chopper': 1,
+                 'Clear chopper': 8,
         },
     ),
     mini_chopper_speed=device(
