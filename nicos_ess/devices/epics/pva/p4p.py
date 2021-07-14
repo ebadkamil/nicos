@@ -97,7 +97,6 @@ class PvaWrapper:
         _CONTEXT.put(pv, value, timeout=timeout, wait=True)
 
     def get_pv_type(self, pv, timeout):
-        # TODO: handle more complex types?
         result = _CONTEXT.get(pv, timeout=timeout)
         try:
             if result['value'].getID() == 'enum_t':
@@ -178,13 +177,15 @@ class PvaWrapper:
             change_callback(name, pvparam, value, severity, message)
 
     def _extract_alarm_info(self, value):
-        # The EPICS 'severity' matches to the NICOS `status`.
-        # p4p doesn't give anything useful for the status, but the message has
+        # The EPICS 'severity' matches to the NICOS `status` and the message has
         # a short description of the alarm details.
         try:
             severity = SEVERITY_TO_STATUS[value['alarm']['severity']]
             return severity, value['alarm']['message']
         except KeyError:
             return status.UNKNOWN, 'alarm information unavailable'
+
+    def close_subscription(self, subscription):
+        subscription.close()
 
 

@@ -137,7 +137,7 @@ class EpicsMonitorMixin(DeviceMixinBase):
 
     def doShutdown(self):
         for sub in self._epics_subscriptions:
-            sub.close()
+            self._epics_wrapper.close_subscription(sub)
 
 
 class EpicsDevice(DeviceMixinBase):
