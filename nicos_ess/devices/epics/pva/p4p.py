@@ -36,7 +36,7 @@ from nicos.devices.epics import SEVERITY_TO_STATUS
 _CONTEXT = Context('pva', nt=False)
 
 
-class PvaWrapper:
+class P4pWrapper:
     def __init__(self):
         self.disconnected = set()
         self.lock = RLock()

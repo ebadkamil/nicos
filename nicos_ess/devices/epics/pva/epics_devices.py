@@ -34,7 +34,7 @@ from nicos.core import POLLER, SIMULATION, ConfigurationError,\
 from nicos.devices.abstract import MappedMoveable
 from nicos.utils import HardwareStub
 
-from nicos_ess.devices.epics.pva.p4p import PvaWrapper
+from nicos_ess.devices.epics.pva.pvaccess import PvapyWrapper
 
 __all__ = [
     'EpicsDevice', 'EpicsReadable', 'EpicsStringReadable',
@@ -162,7 +162,7 @@ class EpicsDevice(DeviceMixinBase):
     _record_fields = {}
 
     def doPreinit(self, mode):
-        self._epics_wrapper = PvaWrapper()
+        self._epics_wrapper = PvapyWrapper()
 
         # Don't create PVs in simulation mode
         self._pvs = {}
