@@ -181,13 +181,9 @@ class LokiSamplePanel(LokiPanelBase):
         column_unit = dialog.unitCreatedData.text()
         if column_unit:
             column_name = column_name + f' ({column_unit})'
-        else:
-            column_name = column_name
 
-        _key = "_" + column_name
-        _value = column_name
         created_data_dict = {
-            _key: _value
+            "_" + column_name: column_name
         }
 
         self.optional_columns.update(created_data_dict)
