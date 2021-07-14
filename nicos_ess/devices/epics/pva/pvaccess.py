@@ -22,7 +22,6 @@
 #
 # *****************************************************************************
 from functools import partial
-from threading import RLock
 
 import numpy as np
 import pvaccess
@@ -35,7 +34,8 @@ class PvapyWrapper:
     def __init__(self):
         self.protocol = pvaccess.PVA
         self.disconnected = set()
-        self.lock = RLock()
+        self._channels = {}
+        self._subscriptions = set()
 
     def connect_pv(self, pvname, timeout):
         # Check pv is available
@@ -64,8 +64,13 @@ class PvapyWrapper:
         return result
 
     def _create_channel(self, pvname, timeout):
+        # Can only connect once to a particular PV
+        # TODO: tidy
+        if pvname in self._channels:
+            return self._channels[pvname]
         chan = pvaccess.Channel(pvname, self.protocol)
         chan.setTimeout(timeout)
+        self._channels[pvname] = chan
         return chan
 
     def get_pv_value(self, pvname, timeout, as_string=False):
@@ -134,16 +139,20 @@ class PvapyWrapper:
         :param as_string: Whether to return the value as a string.
         :return: the subscription object (must be assigned).
         """
+        if pvname in self._subscriptions:
+            return
+
         self.disconnected.add(pvname)
 
         pv_callback = partial(self._pv_callback, pvname, pvparam, change_callback, as_string)
         conn_callback = partial(self._conn_callback, pvname, pvparam, connection_callback)
 
         chan = self._create_channel(pvname, timeout=3.0)
+        chan.setMonitorMaxQueueLength(10)
         chan.subscribe(pvname, pv_callback)
         chan.setConnectionCallback(conn_callback)
-        chan.startMonitor()
-
+        chan.startMonitor('')
+        self._subscriptions.add(pvname)
         return chan
 
     def _pv_callback(self, name, pvparam, change_callback, as_string, result):
@@ -165,4 +174,5 @@ class PvapyWrapper:
         conn_callback(name, pvparam, result)
 
     def close_subscription(self, subscription):
-        subscription.stopMonitor()
+        if subscription:
+            subscription.stopMonitor()
