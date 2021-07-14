@@ -151,7 +151,7 @@ class PvapyWrapper:
         chan.setMonitorMaxQueueLength(10)
         chan.subscribe(pvname, pv_callback)
         chan.setConnectionCallback(conn_callback)
-        chan.startMonitor('')
+        chan.startMonitor()
         self._subscriptions.add(pvname)
         return chan
 
