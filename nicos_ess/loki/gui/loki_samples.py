@@ -248,9 +248,8 @@ class LokiSamplePanel(LokiPanelBase):
                     self.new_column_added = True
 
     def _delete_optional_data_entries(self, column_index):
-        number_of_rows = len(self.model.table_data)
         table = self.model.table_data
-        for row in range(number_of_rows):
-            _data = table[row][column_index]
-            table[row].remove(_data)
+        for index, _ in enumerate(self.model.table_data):
+            _data = table[index][column_index]
+            table[index].remove(_data)
         self.model.table_data = table
