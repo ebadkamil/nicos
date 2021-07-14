@@ -237,11 +237,10 @@ class LokiSamplePanel(LokiPanelBase):
                 self.headers.remove(item)
 
     def _add_optional_data(self):
-        if self.checked_items:
-            for item in self.checked_items:
-                if item not in self.headers:
-                    self.headers.append(item)
-                    self.new_column_added = True
+        for item in self.checked_items:
+            if item not in self.headers:
+                self.headers.append(item)
+                self.new_column_added = True
 
     def _delete_optional_data_entries(self, column_index):
         table = self.model.table_data
