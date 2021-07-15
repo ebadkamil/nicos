@@ -349,6 +349,4 @@ class EpicsMotor(CanDisable, CanReference, HasOffset, EpicsMoveable, Motor):
         deadband = self._get_pv('retry_deadband')
         readback = self._get_pv('readpv')
         setpoint = self._get_pv('writepv')
-        self.log.warning(f'isAtTarget {setpoint} {readback} {deadband}')
-
         return abs(readback - setpoint) < deadband
