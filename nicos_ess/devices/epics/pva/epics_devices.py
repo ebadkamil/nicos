@@ -136,7 +136,7 @@ class EpicsDevice(DeviceMixinBase):
                                      **kwargs)
 
     def _status_change_callback(self, name, param, value, severity, message,
-                               **kwargs):
+                                **kwargs):
         """
         Override this for custom behaviour in sub-classes.
         """
