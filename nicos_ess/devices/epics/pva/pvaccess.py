@@ -31,8 +31,8 @@ from nicos.devices.epics import SEVERITY_TO_STATUS
 
 
 class PvapyWrapper:
-    def __init__(self):
-        self.protocol = pvaccess.PVA
+    def __init__(self, use_pv=True):
+        self.protocol = pvaccess.PVA if use_pv else pvaccess.CA
         self.disconnected = set()
         self._channels = {}
         self._subscriptions = set()
@@ -45,25 +45,12 @@ class PvapyWrapper:
             raise CommunicationError(f'could not connect to PV {pvname}')
         return pvname
 
-    def get_control_values(self, pvname, timeout):
-        result = self._get_current_value(pvname, timeout).toDict()
-        if 'display' in result:
-            return result['display']
-        return result['control'] if 'control' in result else {}
-
-    def get_value_choices(self, pvname, timeout):
-        # Only works for enum types like MBBI and MBBO
-        result = self._get_current_value(pvname, timeout)
-        if isinstance(result['value'], dict) and 'choices' in result['value']:
-            return result['value']['choices']
-        return []
-
     def _get_current_value(self, pvname, timeout):
-        chan = self._create_channel(pvname, timeout)
+        chan = self._get_channel(pvname, timeout)
         result = chan.get()
         return result
 
-    def _create_channel(self, pvname, timeout):
+    def _get_channel(self, pvname, timeout):
         # Can only connect once to a particular PV
         # TODO: tidy
         if pvname in self._channels:
@@ -90,7 +77,7 @@ class PvapyWrapper:
         return value
 
     def put_pv_value(self, pvname, value, wait, timeout):
-        chan = self._create_channel(pvname, timeout)
+        chan = self._get_channel(pvname, timeout)
         chan.put(value)
         # TODO: how to wait?
 
@@ -109,21 +96,35 @@ class PvapyWrapper:
         return type(result["value"])
 
     def get_alarm_status(self, pvname, timeout):
-        result = self._get_current_value(pvname, timeout)
+        result = self._get_channel(pvname, timeout).get('alarm')
         return self._extract_alarm_info(result)
 
     def get_units(self, pvname, timeout, default=''):
-        result = self._get_current_value(pvname, timeout).toDict()
+        result = self._get_channel(pvname, timeout).get('display')
         if 'display' in result:
             return result['display']['units']
         return default
 
     def get_limits(self, pvname, timeout, default_low=-1e308, default_high=1e308):
-        result = self._get_current_value(pvname, timeout).toDict()
+        result = self._get_channel(pvname, timeout).get('display')
         if 'display' in result:
             default_low = result['display']['limitLow']
             default_high = result['display']['limitHigh']
         return default_low, default_high
+
+    def get_control_values(self, pvname, timeout):
+        result = self._get_channel(pvname, timeout).get('display')
+        if 'display' in result:
+            return result['display']
+        result = self._get_channel(pvname, timeout).get('control')
+        return result['control'] if 'control' in result else {}
+
+    def get_value_choices(self, pvname, timeout):
+        # Only works for enum types like MBBI and MBBO
+        result = self._get_current_value(pvname, timeout)
+        if isinstance(result['value'], dict) and 'choices' in result['value']:
+            return result['value']['choices']
+        return []
 
     def subscribe(self, pvname, pvparam, change_callback,
                   connection_callback=None, as_string=False):
@@ -147,7 +148,7 @@ class PvapyWrapper:
         pv_callback = partial(self._pv_callback, pvname, pvparam, change_callback, as_string)
         conn_callback = partial(self._conn_callback, pvname, pvparam, connection_callback)
 
-        chan = self._create_channel(pvname, timeout=3.0)
+        chan = self._get_channel(pvname, timeout=3.0)
         chan.setMonitorMaxQueueLength(10)
         chan.subscribe(pvname, pv_callback)
         chan.setConnectionCallback(conn_callback)

@@ -54,7 +54,8 @@ class EpicsDevice(DeviceMixinBase):
         'epicstimeout': Param('Timeout for getting EPICS PVs',
                               type=none_or(floatrange(0.1, 60)),
                               userparam=False, mandatory=False, default=1.0),
-        'monitor': Param('use a monitor', type=bool, default=True),
+        'monitor': Param('Use a PV monitor', type=bool, default=True),
+        'use_pva': Param('Use PVA rather than CA', type=bool, default=True),
     }
 
     parameter_overrides = {
@@ -70,7 +71,7 @@ class EpicsDevice(DeviceMixinBase):
     _pvs = {}
 
     def doPreinit(self, mode):
-        self._epics_wrapper = PvapyWrapper()
+        self._epics_wrapper = PvapyWrapper(self.use_pva)
         self._param_to_pv = {}
         self._pvs = {}
 
