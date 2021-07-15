@@ -31,11 +31,12 @@ from nicos.devices.epics import SEVERITY_TO_STATUS
 
 
 class PvapyWrapper:
-    def __init__(self, use_pv=True):
-        self.protocol = pvaccess.PVA if use_pv else pvaccess.CA
+    def __init__(self, use_pva=True):
+        self.protocol = pvaccess.PVA if use_pva else pvaccess.CA
         self.disconnected = set()
         self._channels = {}
         self._subscriptions = set()
+        self._default_timeout = 3.0
 
     def connect_pv(self, pvname, timeout):
         # Check pv is available
@@ -159,7 +160,12 @@ class PvapyWrapper:
     def _pv_callback(self, name, pvparam, change_callback, as_string, result):
         if change_callback:
             value = self._convert_value(result['value'], as_string)
-            severity, message = self._extract_alarm_info(result)
+            if 'alarm' in result:
+                severity, message = self._extract_alarm_info(result)
+            else:
+                # CA requires us to query the alarm manually for some fields
+                severity, message = self.get_alarm_status(name,
+                                                          self._default_timeout)
             change_callback(name, pvparam, value, severity, message)
 
     def _extract_alarm_info(self, value):
