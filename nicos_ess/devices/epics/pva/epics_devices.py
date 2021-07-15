@@ -54,6 +54,7 @@ class EpicsDevice(DeviceMixinBase):
         'epicstimeout': Param('Timeout for getting EPICS PVs',
                               type=none_or(floatrange(0.1, 60)),
                               userparam=False, mandatory=False, default=1.0),
+        'monitor': Param('use a monitor', type=bool, default=True),
     }
 
     parameter_overrides = {
@@ -88,7 +89,7 @@ class EpicsDevice(DeviceMixinBase):
                 self._param_to_pv[pvparam] = HardwareStub(self)
 
     def doInit(self, mode):
-        if mode != SIMULATION:
+        if mode != SIMULATION and self.monitor:
             self._register_pv_callbacks()
 
     def _register_pv_callbacks(self):
