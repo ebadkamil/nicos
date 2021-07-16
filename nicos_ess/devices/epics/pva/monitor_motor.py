@@ -347,6 +347,5 @@ class EpicsMotor(CanDisable, CanReference, HasOffset, EpicsMoveable, Motor):
 
     def isAtTarget(self, pos=None, target=None):
         deadband = self._get_pv('retry_deadband')
-        readback = self._get_pv('readpv')
-        setpoint = self._get_pv('writepv')
-        return abs(readback - setpoint) < deadband
+        difference = abs(self._get_pv('readpv') - self._get_pv('writepv'))
+        return difference < deadband
