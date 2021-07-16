@@ -71,7 +71,7 @@ class EpicsDevice(DeviceMixinBase):
     _pvs = {}
 
     def doPreinit(self, mode):
-        self._epics_wrapper = PvapyWrapper(self.use_pva)
+        self._epics_wrapper = PvapyWrapper(self.use_pva, self.epicstimeout)
         self._param_to_pv = {}
         self._pvs = {}
 
@@ -83,7 +83,7 @@ class EpicsDevice(DeviceMixinBase):
                     raise ConfigurationError(self, 'PV for parameter %s was '
                                                    'not found!' % pvparam)
                 # Check pv exists - throws if cannot connect
-                self._epics_wrapper.connect_pv(pvname, self.epicstimeout)
+                self._epics_wrapper.connect_pv(pvname)
                 self._param_to_pv[pvparam] = pvname
         else:
             for pvparam in self._get_pv_parameters():
@@ -126,12 +126,14 @@ class EpicsDevice(DeviceMixinBase):
         """
         Override this for custom behaviour in sub-classes.
         """
+        self.log.error(f"_value_cb {name} {param} {value}")
         cache_key = self._get_cache_relation(param) or name
         self._cache.put(self._name, cache_key, value, time.time())
         self._set_status(name, param, severity, message)
 
     def status_change_callback(self, name, param, value, severity, message,
                                **kwargs):
+        self.log.error(f"_status_cb {name} {param} {value}")
         self._status_change_callback(name, param, value, severity, message,
                                      **kwargs)
 
@@ -173,8 +175,7 @@ class EpicsDevice(DeviceMixinBase):
             pvname, severity, message = self._statuses['readpv']
         else:
             pvname = self._get_pv_name('readpv')
-            severity, message = self._epics_wrapper.get_alarm_status(pvname,
-                                    self.epicstimeout)
+            severity, message = self._epics_wrapper.get_alarm_status(pvname)
         if severity != status.OK:
             return severity, f'Read PV: {message}'
         return severity, ''
@@ -195,8 +196,7 @@ class EpicsDevice(DeviceMixinBase):
     def doStatus(self, maxage=0):
         # For most devices we only care about the status of the read PV
         pvname = self._get_pv_name('readpv')
-        severity, msg = self._epics_wrapper.get_alarm_status(pvname,
-                            timeout=self.epicstimeout)
+        severity, msg = self._epics_wrapper.get_alarm_status(pvname)
         if severity in [status.ERROR, status.WARN]:
             return severity, msg
         return status.OK, msg
@@ -209,21 +209,19 @@ class EpicsDevice(DeviceMixinBase):
                 self._param_to_pv[key] = HardwareStub(self)
 
     def _get_limits(self, pvparam):
-        return self._epics_wrapper.get_limits(self._get_pv_name(pvparam),
-                                              timeout=self.epicstimeout)
+        return self._epics_wrapper.get_limits(self._get_pv_name(pvparam))
 
     def _get_pv(self, pvparam, as_string=False):
         return self._epics_wrapper.get_pv_value(self._param_to_pv[pvparam],
-                                                timeout=self.epicstimeout,
                                                 as_string=as_string)
 
     def _put_pv(self, pvparam, value, wait=False):
-        self._epics_wrapper.put_pv_value(self._param_to_pv[pvparam], value, wait=wait,
-                                         timeout=self.epicstimeout)
+        self._epics_wrapper.put_pv_value(self._param_to_pv[pvparam], value,
+                                         wait=wait)
 
     def _put_pv_blocking(self, pvparam, value, update_rate=0.1, timeout=60):
-        self._epics_wrapper.put_pv_value_blocking(self._param_to_pv[pvparam], value,
-                                                  update_rate, timeout)
+        self._epics_wrapper.put_pv_value_blocking(self._param_to_pv[pvparam],
+                                                  value, update_rate, timeout)
 
 
 class EpicsReadable(EpicsDevice, Readable):
@@ -254,8 +252,7 @@ class EpicsReadable(EpicsDevice, Readable):
         if mode == SIMULATION:
             return
         self.log.warning("doInit")
-        self.valuetype = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'],
-                                                         self.epicstimeout)
+        self.valuetype = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'])
         EpicsDevice.doInit(self, mode)
 
     def doRead(self, maxage=0):
@@ -324,10 +321,8 @@ class EpicsMoveable(EpicsDevice, Moveable):
 
         EpicsDevice.doInit(self, mode)
 
-        in_type = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'],
-                                                  self.epicstimeout)
-        out_type = self._epics_wrapper.get_pv_type(self._param_to_pv['writepv'],
-                                                   self.epicstimeout)
+        in_type = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'])
+        out_type = self._epics_wrapper.get_pv_type(self._param_to_pv['writepv'])
         if in_type != self.valuetype:
             raise ConfigurationError(self, 'Input PV %r does not have the '
                                            'correct data type' % self.readpv)
@@ -335,8 +330,7 @@ class EpicsMoveable(EpicsDevice, Moveable):
             raise ConfigurationError(self, 'Output PV %r does not have the '
                                            'correct data type' % self.writepv)
         if self.targetpv:
-            target_type = self._epics_wrapper.get_pv_type(self._param_to_pv['targetpv'],
-                                                          self.epicstimeout)
+            target_type = self._epics_wrapper.get_pv_type(self._param_to_pv['targetpv'])
             if target_type != self.valuetype:
                 raise ConfigurationError(
                     self, 'Target PV %r does not have the '
@@ -449,7 +443,7 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
 
         if session.sessiontype != POLLER:
             choices = self._epics_wrapper.get_value_choices(
-                self._get_pv_name('readpv'), self.epicstimeout)
+                self._get_pv_name('readpv'))
             # Existing mapping is fixed, so must create and replace
             new_mapping = {}
             for i, choice in enumerate(choices):
