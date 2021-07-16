@@ -126,14 +126,12 @@ class EpicsDevice(DeviceMixinBase):
         """
         Override this for custom behaviour in sub-classes.
         """
-        self.log.error(f"_value_cb {name} {param} {value}")
         cache_key = self._get_cache_relation(param) or name
         self._cache.put(self._name, cache_key, value, time.time())
         self._set_status(name, param, severity, message)
 
     def status_change_callback(self, name, param, value, severity, message,
                                **kwargs):
-        self.log.error(f"_status_cb {name} {param} {value}")
         self._status_change_callback(name, param, value, severity, message,
                                      **kwargs)
 

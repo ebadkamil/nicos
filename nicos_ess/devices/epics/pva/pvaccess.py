@@ -33,9 +33,8 @@ from nicos.devices.epics import SEVERITY_TO_STATUS
 class PvapyWrapper:
     def __init__(self, use_pva=True):
         self.protocol = pvaccess.PVA if use_pva else pvaccess.CA
-        self.disconnected = set()
         self._channels = {}
-        self._subscriptions = set()
+        self._subscriptions = {}
         self._default_timeout = 3.0
 
     def connect_pv(self, pvname, timeout):
@@ -52,8 +51,7 @@ class PvapyWrapper:
         return result
 
     def _get_channel(self, pvname, timeout):
-        # Can only connect once to a particular PV
-        # TODO: tidy
+        # Can only create one connection to any particular PV
         if pvname in self._channels:
             return self._channels[pvname]
         chan = pvaccess.Channel(pvname, self.protocol)
@@ -141,20 +139,21 @@ class PvapyWrapper:
         :param as_string: Whether to return the value as a string.
         :return: the subscription object (must be assigned).
         """
+        # Only subscribe once to any particular PV
         if pvname in self._subscriptions:
             return
 
-        self.disconnected.add(pvname)
-
-        pv_callback = partial(self._pv_callback, pvname, pvparam, change_callback, as_string)
-        conn_callback = partial(self._conn_callback, pvname, pvparam, connection_callback)
+        pv_callback = partial(self._pv_callback, pvname, pvparam,
+                              change_callback, as_string)
+        conn_callback = partial(self._conn_callback, pvname, pvparam,
+                                connection_callback)
 
         chan = self._get_channel(pvname, timeout=3.0)
         chan.setMonitorMaxQueueLength(10)
         chan.subscribe(pvname, pv_callback)
         chan.setConnectionCallback(conn_callback)
         chan.startMonitor()
-        self._subscriptions.add(pvname)
+        self._subscriptions[pvname] = chan
         return chan
 
     def _pv_callback(self, name, pvparam, change_callback, as_string, result):
