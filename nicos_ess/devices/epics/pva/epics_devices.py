@@ -231,11 +231,11 @@ class EpicsReadable(EpicsDevice, Readable):
     parameters = {
         'readpv': Param('PV for reading device value',
                         type=pvname, mandatory=True, userparam=False),
+        'has_unit': Param('There is a EGU field', type=bool, default=True),
     }
 
     parameter_overrides = {
-        # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False),
+        'unit': Override(mandatory=False, settable=False, volatile=True),
     }
 
     _record_fields = {
@@ -258,9 +258,14 @@ class EpicsReadable(EpicsDevice, Readable):
         return self._get_pv('readpv')
 
     def _get_pv_parameters(self):
-        return set(self._record_fields.keys())
+        fields = set(self._record_fields.keys())
+        if not self.has_unit:
+            fields.remove('units')
+        return fields
 
     def doReadUnit(self):
+        if not self.has_unit:
+            return ''
         return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
 
 
@@ -301,8 +306,7 @@ class EpicsMoveable(EpicsDevice, Moveable):
     }
 
     parameter_overrides = {
-        # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False, volatile=True),
+        'unit': Override(mandatory=False, settable=False, volatile=False),
         'target': Override(volatile=True),
     }
 
@@ -352,9 +356,6 @@ class EpicsMoveable(EpicsDevice, Moveable):
     def doStop(self):
         self.doStart(self.doRead())
 
-    def doReadUnit(self):
-        return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
-
 
 class EpicsStringMoveable(EpicsMoveable):
     """
@@ -381,8 +382,13 @@ class EpicsAnalogMoveable(HasLimits, EpicsMoveable):
     """
     valuetype = float
 
+    parameters = {
+        'has_unit': Param('There is a EGU field', type=bool, default=True),
+    }
+
     parameter_overrides = {
         'abslimits': Override(mandatory=False),
+        'unit': Override(mandatory=False, settable=False, volatile=True),
     }
 
     _record_fields = {
@@ -398,12 +404,19 @@ class EpicsAnalogMoveable(HasLimits, EpicsMoveable):
     }
 
     def _get_pv_parameters(self):
-        params = set(self._record_fields.keys())
+        fields = set(self._record_fields.keys())
+        if not self.has_unit:
+            fields.remove('units')
 
         if self.targetpv:
-            return params | {'targetpv'}
+            return fields | {'targetpv'}
 
-        return params
+        return fields
+
+    def doReadUnit(self):
+        if not self.has_unit:
+            return ''
+        return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
 
 
 class EpicsDigitalMoveable(EpicsAnalogMoveable):
@@ -426,9 +439,9 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
     }
 
     parameter_overrides = {
-        # Units are set by EPICS, so cannot be changed
+        # MBBI, BI, etc. do not have units
         'unit': Override(mandatory=False, settable=False),
-        # Mapping values are usual read from EPICS
+        # Mapping values are read from EPICS
         'mapping': Override(mandatory=False, settable=True, userparam=False)
     }
 
@@ -436,7 +449,6 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
         return {'readpv', 'writepv'}
 
     def _subscribe(self, change_callback, pvname, pvparam):
-        # Override for custom subscriptions
         return self._epics_wrapper.subscribe(pvname, pvparam, change_callback,
                                              self.connection_change_callback,
                                              as_string=True)
@@ -444,6 +456,9 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
     def doInit(self, mode):
         if mode == SIMULATION:
             return
+
+        EpicsDevice.doInit(self, mode)
+        MappedMoveable.doInit(self, mode)
 
         if session.sessiontype != POLLER:
             choices = self._epics_wrapper.get_value_choices(
@@ -453,9 +468,6 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
             for i, choice in enumerate(choices):
                 new_mapping[choice] = i
             self.mapping = new_mapping
-
-        EpicsDevice.doInit(self, mode)
-        MappedMoveable.doInit(self, mode)
 
     def doRead(self, maxage=0):
         return self._get_pv('readpv', as_string=True)
