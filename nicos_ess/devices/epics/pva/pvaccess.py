@@ -94,7 +94,7 @@ class PvapyWrapper:
         if isinstance(result['value'], dict) and 'choices' in result['value']:
             # Treat enums as ints
             return int
-        return type(result["value"])
+        return type(result['value'])
 
     def get_alarm_status(self, pvname):
         result = self._get_channel(pvname).get('alarm')
@@ -173,7 +173,8 @@ class PvapyWrapper:
         # a short description of the alarm details.
         try:
             severity = SEVERITY_TO_STATUS[value['alarm']['severity']]
-            return severity, value['alarm']['message']
+            message = value['alarm']['message']
+            return severity, '' if message == 'NO_ALARM' else message
         except KeyError:
             return status.UNKNOWN, 'alarm information unavailable'
 
