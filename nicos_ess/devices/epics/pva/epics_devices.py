@@ -251,7 +251,6 @@ class EpicsReadable(EpicsDevice, Readable):
     def doInit(self, mode):
         if mode == SIMULATION:
             return
-        self.log.warning("doInit")
         self.valuetype = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'])
         EpicsDevice.doInit(self, mode)
 
@@ -260,6 +259,9 @@ class EpicsReadable(EpicsDevice, Readable):
 
     def _get_pv_parameters(self):
         return set(self._record_fields.keys())
+
+    def doReadUnit(self):
+        return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
 
 
 class EpicsStringReadable(EpicsReadable):
@@ -300,7 +302,7 @@ class EpicsMoveable(EpicsDevice, Moveable):
 
     parameter_overrides = {
         # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False),
+        'unit': Override(mandatory=False, settable=False, volatile=True),
         'target': Override(volatile=True),
     }
 
@@ -312,7 +314,6 @@ class EpicsMoveable(EpicsDevice, Moveable):
     def _get_pv_parameters(self):
         if self.targetpv:
             return {'readpv', 'writepv', 'targetpv'}
-
         return {'readpv', 'writepv'}
 
     def doInit(self, mode):
@@ -350,6 +351,9 @@ class EpicsMoveable(EpicsDevice, Moveable):
 
     def doStop(self):
         self.doStart(self.doRead())
+
+    def doReadUnit(self):
+        return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
 
 
 class EpicsStringMoveable(EpicsMoveable):
