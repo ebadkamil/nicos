@@ -37,33 +37,21 @@ _CONTEXT = Context('pva', nt=False)
 
 
 class P4pWrapper:
-    def __init__(self):
+    def __init__(self, timeout=3.0):
         self.disconnected = set()
         self.lock = RLock()
+        self._timeout = timeout
 
-    def connect_pv(self, pvname, timeout):
+    def connect_pv(self, pvname):
         # Check pv is available
         try:
-            _CONTEXT.get(pvname, timeout=timeout)
+            _CONTEXT.get(pvname, timeout=self._timeout)
         except TimeoutError:
             raise CommunicationError(f'could not connect to PV {pvname}')
         return pvname
 
-    def get_control_values(self, pv, timeout):
-        raw_result = _CONTEXT.get(pv, timeout=timeout)
-        if 'display' in raw_result:
-            return raw_result['display']
-        return raw_result['control'] if 'control' in raw_result else {}
-
-    def get_value_choices(self, pv, timeout):
-        # Only works for enum types like MBBI and MBBO
-        raw_result = _CONTEXT.get(pv, timeout=timeout)
-        if 'choices' in raw_result['value']:
-            return raw_result['value']['choices']
-        return []
-
-    def get_pv_value(self, pv, timeout, as_string=False):
-        result = _CONTEXT.get(pv, timeout=timeout)
+    def get_pv_value(self, pvname, as_string=False):
+        result = _CONTEXT.get(pvname, timeout=self._timeout)
         return self._convert_value(result['value'], as_string)
 
     def _convert_value(self, value, as_string=False):
@@ -88,16 +76,17 @@ class P4pWrapper:
 
         return value
 
-    def put_pv_value(self, pv, value, wait, timeout):
-        _CONTEXT.put(pv, value, timeout=timeout, wait=wait)
+    def put_pv_value(self, pvname, value, wait=False):
+        _CONTEXT.put(pvname, value, timeout=self._timeout, wait=wait)
 
-    def put_pv_value_blocking(self, pv, value, update_rate=0.1, timeout=60):
+    def put_pv_value_blocking(self, pvname, value, update_rate=0.1,
+                              block_timeout=60):
         # if wait is set p4p will block until the value is set or it
         # times out
-        _CONTEXT.put(pv, value, timeout=timeout, wait=True)
+        _CONTEXT.put(pvname, value, timeout=block_timeout, wait=True)
 
-    def get_pv_type(self, pv, timeout):
-        result = _CONTEXT.get(pv, timeout=timeout)
+    def get_pv_type(self, pvname):
+        result = _CONTEXT.get(pvname, timeout=self._timeout)
         try:
             if result['value'].getID() == 'enum_t':
                 # Treat enums as ints
@@ -109,25 +98,38 @@ class P4pWrapper:
 
         return type(result["value"])
 
-    def get_alarm_status(self, pv, timeout):
-        result = _CONTEXT.get(pv, timeout=timeout)
+    def get_alarm_status(self, pvname):
+        result = _CONTEXT.get(pvname, timeout=self._timeout)
         return self._extract_alarm_info(result)
 
-    def get_units(self, pv, timeout, default=''):
-        result = _CONTEXT.get(pv, timeout=timeout)
+    def get_units(self, pvname, default=''):
+        result = _CONTEXT.get(pvname, timeout=self._timeout)
         try:
             return result['display']['units']
         except KeyError:
             return default
 
-    def get_limits(self, pv, timeout, default_low=-1e308, default_high=1e308):
-        result = _CONTEXT.get(pv, timeout=timeout)
+    def get_limits(self, pvname, default_low=-1e308, default_high=1e308):
+        result = _CONTEXT.get(pvname, timeout=self._timeout)
         try:
             default_low = result['display']['limitLow']
             default_high = result['display']['limitHigh']
         except KeyError:
             pass
         return default_low, default_high
+
+    def get_control_values(self, pvname):
+        raw_result = _CONTEXT.get(pvname, timeout=self._timeout)
+        if 'display' in raw_result:
+            return raw_result['display']
+        return raw_result['control'] if 'control' in raw_result else {}
+
+    def get_value_choices(self, pvname):
+        # Only works for enum types like MBBI and MBBO
+        raw_result = _CONTEXT.get(pvname, timeout=self._timeout)
+        if 'choices' in raw_result['value']:
+            return raw_result['value']['choices']
+        return []
 
     def subscribe(self, pvname, pvparam, change_callback,
                   connection_callback=None, as_string=False):
@@ -154,27 +156,27 @@ class P4pWrapper:
                                         notify_disconnect=True)
         return subscription
 
-    def _callback(self, name, pvparam, change_callback, connection_callback,
+    def _callback(self, pvname, pvparam, change_callback, connection_callback,
                   as_string, result):
         if isinstance(result, Exception):
             # Only callback on disconnection if was previously connected
-            if connection_callback and name not in self.disconnected:
-                connection_callback(name, pvparam, False)
-                self.disconnected.add(name)
+            if connection_callback and pvname not in self.disconnected:
+                connection_callback(pvname, pvparam, False)
+                self.disconnected.add(pvname)
             return
 
-        if name in self.disconnected:
+        if pvname in self.disconnected:
             # Only callback if it is a new connection
             if connection_callback:
-                connection_callback(name, pvparam, True)
+                connection_callback(pvname, pvparam, True)
             with self.lock:
-                if name in self.disconnected:
-                    self.disconnected.remove(name)
+                if pvname in self.disconnected:
+                    self.disconnected.remove(pvname)
 
         if change_callback:
             value = self._convert_value(result['value'], as_string)
             severity, message = self._extract_alarm_info(result)
-            change_callback(name, pvparam, value, severity, message)
+            change_callback(pvname, pvparam, value, severity, message)
 
     def _extract_alarm_info(self, value):
         # The EPICS 'severity' matches to the NICOS `status` and the message has
