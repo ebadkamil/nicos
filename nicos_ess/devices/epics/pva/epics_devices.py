@@ -133,7 +133,6 @@ class EpicsDevice(DeviceMixinBase):
 
     def status_change_callback(self, name, param, value, severity, message,
                                **kwargs):
-        self.log.error(f"_status_cb {name} {param} {value}")
         self._status_change_callback(name, param, value, severity, message,
                                      **kwargs)
 
