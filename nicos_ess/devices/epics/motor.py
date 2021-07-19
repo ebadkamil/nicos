@@ -380,13 +380,3 @@ class EpicsMonitorMotor(PVMonitor, EpicsMotor):
             status_pars.add('alarm_status')
             status_pars.add('alarm_severity')
         return status_pars
-
-    def _get_status_message(self):
-        """
-        Get the status message from the motor if the PV exists.
-        :return: The status message if it exists, otherwise an empty string.
-        """
-        if not self.errormsgpv:
-            return ''
-        return self._pvs['errormsgpv'].get(timeout=self.epicstimeout,
-                                           as_string=True)
