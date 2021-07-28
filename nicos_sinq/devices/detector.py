@@ -133,14 +133,12 @@ class ControlDetector(Detector):
     trigger and HM slaves.
     """
 
-    attached_devices = {'trigger':
-                        Attach('Detector which triggers data acquisition',
-                               Detector),
-                        'slave_detectors': Attach('Slave detectors',
-                                                  Measurable,
-                                                  multiple=True,
-                                                  optional=True),
-                        }
+    attached_devices = {
+        'trigger': Attach('Detector which triggers data acquisition',
+                          Detector),
+        'slave_detectors': Attach('Slave detectors', Measurable,
+                                  multiple=True, optional=True),
+    }
     _slaves_stopped = False
 
     def doSetPreset(self, **preset):
@@ -239,8 +237,8 @@ class ControlDetector(Detector):
             res = res + det.doRead(maxage)
         return res
 
-    def doReadArrays(self):
-        res = self._attached_trigger.doReadArrays()
+    def doReadArrays(self, quality):
+        res = self._attached_trigger.doReadArrays(quality)
         for det in self._attached_slave_detectors:
-            res = res + det.doReadArrays()
+            res += det.doReadArrays(quality)
         return res

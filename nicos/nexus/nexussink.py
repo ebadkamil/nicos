@@ -22,12 +22,12 @@
 #
 # *****************************************************************************
 import importlib
+from pathlib import Path
 
 import h5py
 import numpy
 
-from nicos.core import SLAVE
-from nicos.core.constants import POINT, SCAN
+from nicos.core.constants import LIVE, POINT, SCAN
 from nicos.core.data import DataSinkHandler
 from nicos.core.errors import NicosError
 from nicos.core.params import Param
@@ -61,8 +61,7 @@ def copy_nexus_template(template):
         return {k: copy_nexus_template(v) for k, v in template.items()}
     elif isinstance(template, list):
         return [copy_nexus_template(elem) for elem in template]
-    else:
-        return template
+    return template
 
 
 class NexusSinkHandler(DataSinkHandler):
@@ -91,6 +90,8 @@ class NexusSinkHandler(DataSinkHandler):
             self.template = copy_nexus_template(self.sink.loadTemplate())
 
             self.h5file = h5py.File(self.startdataset.filepaths[0], 'w')
+            p = Path(self.startdataset.filepaths[0])
+            self.log.info('Writing file %s', p.name)
             self.h5file.attrs['file_name'] = numpy.string_(
                 self.startdataset.filepaths[0])
             tf = NXTime()
@@ -118,7 +119,7 @@ class NexusSinkHandler(DataSinkHandler):
             elif isinstance(val, dict):
                 if ':' not in key:
                     self.log.warning(
-                        'Cannot write group %s, no nxclass defined', key)
+                        'Cannot write group %r, no nxclass defined', key)
                     continue
                 [nxname, nxclass] = key.rsplit(':', 1)
                 nxgroup = h5obj.create_group(nxname)
@@ -127,7 +128,7 @@ class NexusSinkHandler(DataSinkHandler):
             elif isinstance(val, NexusElementBase):
                 val.create(key, h5obj, self)
             else:
-                self.log.warning('Cannot write %s of type %s', key, type(val))
+                self.log.warning('Cannot write %r of type %r', key, type(val))
 
     def updateValues(self, dictdata, h5obj, values):
         if self.dataset.settype == POINT:
@@ -142,7 +143,7 @@ class NexusSinkHandler(DataSinkHandler):
                 elif isinstance(val, NexusElementBase):
                     val.update(key, h5obj, self, values)
                 else:
-                    self.log.warning('Cannot identify and  update %s', key)
+                    self.log.warning('Cannot identify and update %r', key)
 
     def append(self, dictdata, h5obj, subset):
         for key, val in dictdata.items():
@@ -157,9 +158,9 @@ class NexusSinkHandler(DataSinkHandler):
                 try:
                     val.append(key, h5obj, self, subset)
                 except Exception as err:
-                    self.log.warning('Exception %s on key %s', err, key)
+                    self.log.warning('Exception %r on key %r', err, key)
             else:
-                self.log.warning('Cannot identify and append %s', key)
+                self.log.warning('Cannot identify and append %r', key)
 
     def putValues(self, values):
         h5obj = self.h5file['/']
@@ -179,9 +180,12 @@ class NexusSinkHandler(DataSinkHandler):
             elif isinstance(val, NexusElementBase):
                 val.results(key, h5obj, self, results)
             else:
-                self.log.warning('Cannot add results to %s', key)
+                self.log.warning('Cannot add results to %r', key)
 
     def putResults(self, quality, results):
+        # Suppress updating data files when updating live data
+        if quality == LIVE:
+            return
         h5obj = self.h5file['/']
         self.resultValues(self.template, h5obj, results)
         self.h5file.flush()
@@ -257,10 +261,6 @@ class NexusSink(FileSink):
 
     handlerclass = NexusSinkHandler
     _handlerObj = None
-
-    def doInit(self, mode):
-        if mode == SLAVE:
-            return
 
     # The default implementation creates gazillions of SinkHandlers.
     # For NeXus we do not want this, we want one keeping track of the whole

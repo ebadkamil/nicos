@@ -28,7 +28,7 @@ from nicos.core import Override, Param, pvname, status
 from nicos.core.errors import PositionError
 from nicos.devices.abstract import MappedMoveable
 
-from nicos_ess.devices.epics.base import EpicsDeviceEss
+from nicos_ess.devices.epics.base import EpicsDeviceEss, EpicsReadable
 
 
 class SpsSwitch(EpicsDeviceEss, MappedMoveable):
@@ -92,7 +92,8 @@ class SpsSwitch(EpicsDeviceEss, MappedMoveable):
         return True
 
     def _readBit(self, byte, bit):
-        raw = self._get_pv('readpv')
+        raw = self._pvs['readpv'].get(timeout=self.epicstimeout,
+                                      count=self.byte+1)
         if byte > len(raw):
             raise PositionError('Byte specified is out of bounds')
 
@@ -153,3 +154,28 @@ class AmorShutter(SpsSwitch):
             return super_status
 
         return status.OK, 'Enabled'
+
+
+class SpsBit(EpicsReadable):
+    """
+    A class for reading a single bit from a SINQ SPS S5
+    """
+
+    parameters = {
+        'byte': Param('Byte number representing the state of this unit',
+                      type=int, mandatory=True, userparam=False,
+                      settable=False),
+        'bit': Param('Bit number from the byte representing the state',
+                     type=int, mandatory=True, userparam=False,
+                     settable=False),
+    }
+
+    def doRead(self, maxage=0):
+        raw = self._pvs['readpv'].get(timeout=self.epicstimeout,
+                                      count=self.byte+1)
+
+        if self.byte > len(raw):
+            raise PositionError('Byte specified is out of bounds')
+
+        powered = 1 << self.bit
+        return raw[self.byte] & powered == powered

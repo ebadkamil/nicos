@@ -48,7 +48,7 @@ def init(log):
 
     paths = [os.path.join(getNicosDir(), 'nicos', 'devices'),
              os.path.join(getNicosDir(), 'nicos', 'services')] + glob.glob(
-        getNicosDir() + '/nicos_mlz/*/devices')
+        os.path.join(getNicosDir(), 'nicos_*', '*', 'devices'))
 
     pys = []
     for pth in paths:
@@ -56,9 +56,9 @@ def init(log):
             pys += [os.path.join(root, f) for f in files if f.endswith('.py')]
 
     for py in pys:
-        fqdn = py.split('/')
+        fqdn = py.split(os.sep)
         fqdn[-1] = str(fqdn[-1])[:-3]
-        prependingPathCount = len(getNicosDir().split('/'))
+        prependingPathCount = len(getNicosDir().split(os.sep))
         for _ in range(prependingPathCount):
             fqdn.pop(0)  # cutting the path to nicos directory
         moduleName = '.'.join(fqdn)
@@ -67,7 +67,7 @@ def init(log):
         try:
             mod = session._nicos_import(moduleName)
             modules[moduleName] = mod
-        except (ImportError, KeyError) as e:
+        except (ImportError, KeyError, NameError) as e:
             log.warning('Error importing ' + moduleName + ': ' + str(e))
 
 
