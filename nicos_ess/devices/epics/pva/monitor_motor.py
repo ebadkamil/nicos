@@ -72,7 +72,7 @@ class EpicsMotor(CanDisable, CanReference, HasOffset, EpicsMoveable, Motor):
         'abslimits': Override(volatile=True, mandatory=False),
 
         # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False),
+        'unit': Override(mandatory=False, settable=False, volatile=True),
     }
 
     # Fields of the motor record for which an interaction via Channel Access
@@ -349,3 +349,6 @@ class EpicsMotor(CanDisable, CanReference, HasOffset, EpicsMoveable, Motor):
         deadband = self._get_pv('retry_deadband')
         difference = abs(self._get_pv('readpv') - self._get_pv('writepv'))
         return difference < deadband
+
+    def doReadUnit(self):
+        return self._get_pv('units')

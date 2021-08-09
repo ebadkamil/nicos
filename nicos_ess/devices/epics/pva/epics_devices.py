@@ -438,7 +438,7 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
 
     parameter_overrides = {
         # MBBI, BI, etc. do not have units
-        'unit': Override(mandatory=False, settable=False),
+        'unit': Override(mandatory=False, settable=False, volatile=False),
         # Mapping values are read from EPICS
         'mapping': Override(mandatory=False, settable=True, userparam=False)
     }
