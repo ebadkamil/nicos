@@ -57,12 +57,6 @@ class EpicsDevice(DeviceMixinBase):
         'monitor': Param('Use a PV monitor', type=bool, default=True),
     }
 
-    parameter_overrides = {
-        # Hide the parameters that are irrelevant when using monitors.
-        'maxage': Override(userparam=False, settable=False),
-        'pollinterval': Override(userparam=False, settable=False),
-    }
-
     # This will store PV objects for each PV param.
     _param_to_pv = {}
     _epics_wrapper = None
