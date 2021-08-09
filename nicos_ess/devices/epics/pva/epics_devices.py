@@ -30,12 +30,11 @@ import time
 from nicos import session
 from nicos.core import POLLER, SIMULATION, ConfigurationError, \
     DeviceMixinBase, HasLimits, Moveable, Override, Param, Readable, anytype, \
-    floatrange, none_or, oneof, pvname, status
+    floatrange, none_or, pvname, status
 from nicos.devices.abstract import MappedMoveable
 from nicos.utils import HardwareStub
 
 from nicos_ess.devices.epics.pva.p4p import P4pWrapper
-from nicos_ess.devices.epics.pva.pvaccess import PvapyWrapper
 
 __all__ = [
     'EpicsDevice', 'EpicsReadable', 'EpicsStringReadable',
@@ -55,11 +54,7 @@ class EpicsDevice(DeviceMixinBase):
         'epicstimeout': Param('Timeout for getting EPICS PVs',
                               type=none_or(floatrange(0.1, 60)),
                               userparam=False, mandatory=False, default=1.0),
-        'use_pvapy': Param('Use pvapy rather than p4p', type=bool,
-                           default=False),
         'monitor': Param('Use a PV monitor', type=bool, default=True),
-        'protocol': Param('Use PVA rather than CA (pvapy only)',
-                          type=oneof('pva', 'ca'), default='pva'),
     }
 
     parameter_overrides = {
@@ -74,20 +69,11 @@ class EpicsDevice(DeviceMixinBase):
     _record_fields = {}
     _pvs = {}
 
-    def _create_epics_wrapper(self):
-        if self.use_pvapy:
-            self._epics_wrapper = PvapyWrapper(self.protocol == 'pva',
-                                               self.epicstimeout)
-        else:
-            if self.protocol != 'pva':
-                raise ConfigurationError('can only use PVA when using p4p')
-            self._epics_wrapper = P4pWrapper(self.epicstimeout)
-
     def doPreinit(self, mode):
         self._param_to_pv = {}
         self._pvs = {}
 
-        self._create_epics_wrapper()
+        self._epics_wrapper = P4pWrapper(self.epicstimeout)
 
         if mode != SIMULATION:
             for pvparam in self._get_pv_parameters():
@@ -140,7 +126,6 @@ class EpicsDevice(DeviceMixinBase):
         """
         Override this for custom behaviour in sub-classes.
         """
-        self.log.error(f"_value_cb {name} {param} {value}")
         cache_key = self._get_cache_relation(param) or name
         self._cache.put(self._name, cache_key, value, time.time())
         self._set_status(name, param, severity, message)
