@@ -59,8 +59,7 @@ class LaserDetector(Measurable):
         pass
 
     def doStop(self):
-        # Treat like a finish
-        self._stop_processing()
+        pass
 
     def doStatus(self, maxage=0):
         return self._attached_laser.doStatus(maxage)
