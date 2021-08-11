@@ -24,8 +24,10 @@
 
 """Astrium selector device with adaptations for RESEDA"""
 
-from nicos.core import Param
-from nicos.devices.vendor.astrium import SelectorLambda as NicosSelectorLambda
+from math import asin, pi, radians
+
+from nicos.devices.vendor.astrium import SelectorLambda as NicosSelectorLambda, \
+    SelectorLambdaSpread as NicosSelectorLambdaSpread
 
 
 class SelectorLambda(NicosSelectorLambda):
@@ -34,9 +36,7 @@ class SelectorLambda(NicosSelectorLambda):
     wavelength. (RESEDA version)
     """
 
-    parameters = {
-        'radius': Param('Selector radius', mandatory=True, unit='m'),
-    }
+    speed_scale = 6.5933900e2
 
     def sel(self, maxage):
         """Calculate wavelength from speed and tilting angle.
@@ -46,8 +46,8 @@ class SelectorLambda(NicosSelectorLambda):
         """
         spd = self._attached_seldev.read(maxage)
         if spd:
-            return 6.5933900e2 * (
-                self.twistangle + self.length / self.radius *
+            return self.speed_scale * (
+                self.twistangle + self.length / self.beamcenter *
                 self._get_tilt(maxage)) / (spd * self.length)
         return -1
 
@@ -57,8 +57,8 @@ class SelectorLambda(NicosSelectorLambda):
         The rotation speed is given in 'rpm', the tilting angle in 'deg', and
         the wavelength in 'AA'.
         """
-        return 6.5933900e2 * (
-            self.twistangle + self.length / self.radius *
+        return self.speed_scale * (
+            self.twistangle + self.length / self.beamcenter *
             self._get_tilt(maxage)) / (lam * self.length)
 
     def doRead(self, maxage=0):
@@ -68,3 +68,14 @@ class SelectorLambda(NicosSelectorLambda):
         speed = int(self.sel_inv(value))
         self.log.debug('moving selector to %d rpm', speed)
         self._attached_seldev.start(speed)
+
+
+class SelectorLambdaSpread(NicosSelectorLambdaSpread):
+
+    def doRead(self, maxage=0):
+        lamdev = self._attached_lamdev
+        tilt = lamdev._get_tilt(maxage)
+        eff_twistangle = lamdev.twistangle + \
+            tilt * lamdev.length / lamdev.beamcenter
+        spread = 2 * asin(pi / self.n_lamellae) / radians(eff_twistangle)
+        return 100 * spread

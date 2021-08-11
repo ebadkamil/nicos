@@ -23,9 +23,9 @@
 # *****************************************************************************
 """Methods to parse setup files."""
 
-import glob
 import inspect
 import os
+from pathlib import Path
 
 from nicos.core.device import Device as _Class_device
 from nicos.core.sessions import Session
@@ -46,28 +46,28 @@ def init(log):
     # <nicos directory>/nicos/services/cache/server.py
     # returns the dictionary.
 
-    paths = [os.path.join(getNicosDir(), 'nicos', 'devices'),
-             os.path.join(getNicosDir(), 'nicos', 'services')] + glob.glob(
-        getNicosDir() + '/nicos_mlz/*/devices')
+    paths = [
+        Path().joinpath(getNicosDir(), 'nicos', 'devices'),
+        Path().joinpath(getNicosDir(), 'nicos', 'services')] + list(
+        Path(getNicosDir()).glob(
+            '%s' % Path().joinpath('nicos_*', '*', 'devices')))
 
     pys = []
     for pth in paths:
         for root, _, files in os.walk(pth):
-            pys += [os.path.join(root, f) for f in files if f.endswith('.py')]
+            pys += [Path().joinpath(root, f)
+                    for f in files if f.endswith('.py')]
 
     for py in pys:
-        fqdn = py.split('/')
-        fqdn[-1] = str(fqdn[-1])[:-3]
-        prependingPathCount = len(getNicosDir().split('/'))
-        for _ in range(prependingPathCount):
-            fqdn.pop(0)  # cutting the path to nicos directory
-        moduleName = '.'.join(fqdn)
-        if moduleName.endswith('__init__'):
-            moduleName = moduleName[:-9]
+        moduleFile = py.relative_to(getNicosDir())
+        if moduleFile.name == '__init__.py':
+            moduleName = '.'.join(moduleFile.parent.parts)
+        else:
+            moduleName = '.'.join(moduleFile.with_suffix('').parts)
         try:
             mod = session._nicos_import(moduleName)
             modules[moduleName] = mod
-        except (ImportError, KeyError) as e:
+        except (ImportError, KeyError, NameError) as e:
             log.warning('Error importing ' + moduleName + ': ' + str(e))
 
 
