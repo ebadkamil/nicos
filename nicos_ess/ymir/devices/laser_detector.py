@@ -22,38 +22,29 @@
 #
 # *****************************************************************************
 from nicos import session
-from nicos.core import Param, Value, status, tupleof
+from nicos.core import Param, Value
 from nicos.core.constants import LIVE
-from nicos.core.device import Measurable
-from nicos.devices.epics import pvget
+from nicos.core.device import Measurable, Readable
+from nicos.core.params import Attach
 
 
 class LaserDetector(Measurable):
     parameters = {
-        'pv_name': Param('Store the current identifier',
-                         internal=False, type=str,
-                         default="SES-SCAN:LSR-001:AnalogInput",
-                         settable=True),
-        'curstatus': Param('Store the current device status',
-                           internal=True, type=tupleof(int, str),
-                           default=(status.OK, ""),
-                           settable=True),
         'answer': Param('Store the current device status',
                         internal=True, type=float,
                         default=0,
                         settable=True),
     }
-
-    def doPrepare(self):
-        self.curstatus = status.BUSY, "Preparing"
-        self.curstatus = status.OK, ""
+    attached_devices = {
+        'laser': Attach('the underlying laser device', Readable),
+    }
 
     def doStart(self):
         max_pow = 0
         results = []
         for _ in range(5):
             session.delay(0.1)
-            val = pvget(self.pv_name)
+            val = self._attached_laser.doRead()
             max_pow = max(val, max_pow)
             results.append(val)
         self.answer = sum(results) / len(results)
@@ -62,20 +53,16 @@ class LaserDetector(Measurable):
         return [self.answer]
 
     def doFinish(self):
-        self._stop_processing()
-
-    def _stop_processing(self):
-        self.curstatus = status.OK, ""
+        pass
 
     def doSetPreset(self, t, **preset):
-        self.curstatus = status.BUSY, "Preparing"
+        pass
 
     def doStop(self):
-        # Treat like a finish
-        self._stop_processing()
+        pass
 
     def doStatus(self, maxage=0):
-        return self.curstatus
+        return self._attached_laser.doStatus(maxage)
 
     def duringMeasureHook(self, elapsed):
         return LIVE
