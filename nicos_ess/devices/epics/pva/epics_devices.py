@@ -28,26 +28,64 @@ This module contains some classes for NICOS - EPICS integration.
 import time
 
 from nicos import session
-from nicos.core import POLLER, SIMULATION, ConfigurationError,\
-    DeviceMixinBase, HasLimits, Moveable, Override, Param, Readable, anytype,\
+from nicos.core import POLLER, SIMULATION, ConfigurationError, \
+    DeviceMixinBase, HasLimits, Moveable, Override, Param, Readable, anytype, \
     floatrange, none_or, pvname, status
 from nicos.devices.abstract import MappedMoveable
 from nicos.utils import HardwareStub
 
-from nicos_ess.devices.epics.pva.p4p import PvaWrapper
+from nicos_ess.devices.epics.pva.p4p import P4pWrapper
 
 __all__ = [
     'EpicsDevice', 'EpicsReadable', 'EpicsStringReadable',
     'EpicsMoveable', 'EpicsAnalogMoveable', 'EpicsDigitalMoveable',
-    'EpicsMonitorMixin'
 ]
 
 
-class EpicsMonitorMixin(DeviceMixinBase):
+class EpicsDevice(DeviceMixinBase):
+    hardware_access = True
+    valuetype = anytype
     pv_status_parameters = set()
     _epics_subscriptions = set()
     _cache_relations = {'readpv': 'value'}
     _statuses = {}
+
+    parameters = {
+        'epicstimeout': Param('Timeout for getting EPICS PVs',
+                              type=none_or(floatrange(0.1, 60)),
+                              userparam=False, mandatory=False, default=1.0),
+        'monitor': Param('Use a PV monitor', type=bool, default=True),
+    }
+
+    # This will store PV objects for each PV param.
+    _param_to_pv = {}
+    _epics_wrapper = None
+    _record_fields = {}
+    _pvs = {}
+
+    def doPreinit(self, mode):
+        self._param_to_pv = {}
+        self._pvs = {}
+
+        self._epics_wrapper = P4pWrapper(self.epicstimeout)
+
+        if mode != SIMULATION:
+            for pvparam in self._get_pv_parameters():
+                # Retrieve the actual PV name
+                pvname = self._get_pv_name(pvparam)
+                if not pvname:
+                    raise ConfigurationError(self, 'PV for parameter %s was '
+                                                   'not found!' % pvparam)
+                # Check pv exists - throws if cannot connect
+                self._epics_wrapper.connect_pv(pvname)
+                self._param_to_pv[pvparam] = pvname
+        else:
+            for pvparam in self._get_pv_parameters():
+                self._param_to_pv[pvparam] = HardwareStub(self)
+
+    def doInit(self, mode):
+        if mode != SIMULATION and self.monitor:
+            self._register_pv_callbacks()
 
     def _register_pv_callbacks(self):
         self._epics_subscriptions = set()
@@ -92,7 +130,7 @@ class EpicsMonitorMixin(DeviceMixinBase):
                                      **kwargs)
 
     def _status_change_callback(self, name, param, value, severity, message,
-                               **kwargs):
+                                **kwargs):
         """
         Override this for custom behaviour in sub-classes.
         """
@@ -129,61 +167,14 @@ class EpicsMonitorMixin(DeviceMixinBase):
             pvname, severity, message = self._statuses['readpv']
         else:
             pvname = self._get_pv_name('readpv')
-            severity, message = self._epics_wrapper.get_alarm_status(pvname,
-                                    self.epicstimeout)
+            severity, message = self._epics_wrapper.get_alarm_status(pvname)
         if severity != status.OK:
             return severity, f'Read PV: {message}'
         return severity, ''
 
     def doShutdown(self):
         for sub in self._epics_subscriptions:
-            sub.close()
-
-
-class EpicsDevice(DeviceMixinBase):
-    hardware_access = True
-    valuetype = anytype
-
-    parameters = {
-        'epicstimeout': Param('Timeout for getting EPICS PVs',
-                              type=none_or(floatrange(0.1, 60)),
-                              userparam=False, mandatory=False, default=1.0),
-    }
-
-    parameter_overrides = {
-        # Hide the parameters that are irrelevant when using monitors.
-        'maxage': Override(userparam=False, settable=False),
-        'pollinterval': Override(userparam=False, settable=False),
-    }
-
-    # This will store PV objects for each PV param.
-    _pvs = {}
-    _epics_wrapper = None
-    _record_fields = {}
-
-    def doPreinit(self, mode):
-        self._epics_wrapper = PvaWrapper()
-
-        # Don't create PVs in simulation mode
-        self._pvs = {}
-
-        if mode != SIMULATION:
-            for pvparam in self._get_pv_parameters():
-                # Retrieve the actual PV name
-                pvname = self._get_pv_name(pvparam)
-                if not pvname:
-                    raise ConfigurationError(self, 'PV for parameter %s was '
-                                                   'not found!' % pvparam)
-                # Check pv exists - throws if cannot connect
-                self._epics_wrapper.connect_pv(pvname, self.epicstimeout)
-                self._pvs[pvparam] = pvname
-            self._register_pv_callbacks()
-        else:
-            for pvparam in self._get_pv_parameters():
-                self._pvs[pvparam] = HardwareStub(self)
-
-    def _register_pv_callbacks(self):
-        pass
+            self._epics_wrapper.close_subscription(sub)
 
     def _get_pv_parameters(self):
         return set(self._record_fields.keys())
@@ -197,8 +188,7 @@ class EpicsDevice(DeviceMixinBase):
     def doStatus(self, maxage=0):
         # For most devices we only care about the status of the read PV
         pvname = self._get_pv_name('readpv')
-        severity, msg = self._epics_wrapper.get_alarm_status(pvname,
-                            timeout=self.epicstimeout)
+        severity, msg = self._epics_wrapper.get_alarm_status(pvname)
         if severity in [status.ERROR, status.WARN]:
             return severity, msg
         return status.OK, msg
@@ -207,39 +197,37 @@ class EpicsDevice(DeviceMixinBase):
         # remove the PVs on entering simulation mode, to prevent
         # accidental access to the hardware
         if mode == SIMULATION:
-            for key in self._pvs:
-                self._pvs[key] = HardwareStub(self)
+            for key in self._param_to_pv:
+                self._param_to_pv[key] = HardwareStub(self)
 
     def _get_limits(self, pvparam):
-        return self._epics_wrapper.get_limits(self._get_pv_name(pvparam),
-                                              timeout=self.epicstimeout)
+        return self._epics_wrapper.get_limits(self._get_pv_name(pvparam))
 
     def _get_pv(self, pvparam, as_string=False):
-        return self._epics_wrapper.get_pv_value(self._pvs[pvparam],
-                                                timeout=self.epicstimeout,
+        return self._epics_wrapper.get_pv_value(self._param_to_pv[pvparam],
                                                 as_string=as_string)
 
     def _put_pv(self, pvparam, value, wait=False):
-        self._epics_wrapper.put_pv_value(self._pvs[pvparam], value, wait=wait,
-                                         timeout=self.epicstimeout)
+        self._epics_wrapper.put_pv_value(self._param_to_pv[pvparam], value,
+                                         wait=wait)
 
     def _put_pv_blocking(self, pvparam, value, update_rate=0.1, timeout=60):
-        self._epics_wrapper.put_pv_value_blocking(self._pvs[pvparam], value,
-                                                  update_rate, timeout)
+        self._epics_wrapper.put_pv_value_blocking(self._param_to_pv[pvparam],
+                                                  value, update_rate, timeout)
 
 
-class EpicsReadable(EpicsMonitorMixin, EpicsDevice, Readable):
+class EpicsReadable(EpicsDevice, Readable):
     """
     Handles EPICS devices that can only read a value.
     """
     parameters = {
         'readpv': Param('PV for reading device value',
                         type=pvname, mandatory=True, userparam=False),
+        'has_unit': Param('There is a EGU field', type=bool, default=True),
     }
 
     parameter_overrides = {
-        # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False),
+        'unit': Override(mandatory=False, settable=False, volatile=True),
     }
 
     _record_fields = {
@@ -255,14 +243,22 @@ class EpicsReadable(EpicsMonitorMixin, EpicsDevice, Readable):
     def doInit(self, mode):
         if mode == SIMULATION:
             return
-        self.valuetype = self._epics_wrapper.get_pv_type(self._pvs['readpv'],
-                                                         self.epicstimeout)
+        self.valuetype = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'])
+        EpicsDevice.doInit(self, mode)
 
     def doRead(self, maxage=0):
         return self._get_pv('readpv')
 
     def _get_pv_parameters(self):
-        return set(self._record_fields.keys())
+        fields = set(self._record_fields.keys())
+        if not self.has_unit:
+            fields.remove('units')
+        return fields
+
+    def doReadUnit(self):
+        if not self.has_unit:
+            return ''
+        return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
 
 
 class EpicsStringReadable(EpicsReadable):
@@ -287,7 +283,7 @@ class EpicsStringReadable(EpicsReadable):
         return self._get_pv('readpv', as_string=True)
 
 
-class EpicsMoveable(EpicsMonitorMixin, EpicsDevice, Moveable):
+class EpicsMoveable(EpicsDevice, Moveable):
     """
     Handles EPICS devices which can set and read a value.
     """
@@ -302,8 +298,7 @@ class EpicsMoveable(EpicsMonitorMixin, EpicsDevice, Moveable):
     }
 
     parameter_overrides = {
-        # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False),
+        'unit': Override(mandatory=False, settable=False, volatile=False),
         'target': Override(volatile=True),
     }
 
@@ -315,17 +310,16 @@ class EpicsMoveable(EpicsMonitorMixin, EpicsDevice, Moveable):
     def _get_pv_parameters(self):
         if self.targetpv:
             return {'readpv', 'writepv', 'targetpv'}
-
         return {'readpv', 'writepv'}
 
     def doInit(self, mode):
         if mode == SIMULATION:
             return
 
-        in_type = self._epics_wrapper.get_pv_type(self._pvs['readpv'],
-                                                  self.epicstimeout)
-        out_type = self._epics_wrapper.get_pv_type(self._pvs['writepv'],
-                                                   self.epicstimeout)
+        EpicsDevice.doInit(self, mode)
+
+        in_type = self._epics_wrapper.get_pv_type(self._param_to_pv['readpv'])
+        out_type = self._epics_wrapper.get_pv_type(self._param_to_pv['writepv'])
         if in_type != self.valuetype:
             raise ConfigurationError(self, 'Input PV %r does not have the '
                                            'correct data type' % self.readpv)
@@ -333,8 +327,7 @@ class EpicsMoveable(EpicsMonitorMixin, EpicsDevice, Moveable):
             raise ConfigurationError(self, 'Output PV %r does not have the '
                                            'correct data type' % self.writepv)
         if self.targetpv:
-            target_type = self._epics_wrapper.get_pv_type(self._pvs['targetpv'],
-                                                          self.epicstimeout)
+            target_type = self._epics_wrapper.get_pv_type(self._param_to_pv['targetpv'])
             if target_type != self.valuetype:
                 raise ConfigurationError(
                     self, 'Target PV %r does not have the '
@@ -381,8 +374,13 @@ class EpicsAnalogMoveable(HasLimits, EpicsMoveable):
     """
     valuetype = float
 
+    parameters = {
+        'has_unit': Param('There is a EGU field', type=bool, default=True),
+    }
+
     parameter_overrides = {
         'abslimits': Override(mandatory=False),
+        'unit': Override(mandatory=False, settable=False, volatile=True),
     }
 
     _record_fields = {
@@ -398,12 +396,19 @@ class EpicsAnalogMoveable(HasLimits, EpicsMoveable):
     }
 
     def _get_pv_parameters(self):
-        params = set(self._record_fields.keys())
+        fields = set(self._record_fields.keys())
+        if not self.has_unit:
+            fields.remove('units')
 
         if self.targetpv:
-            return params | {'targetpv'}
+            return fields | {'targetpv'}
 
-        return params
+        return fields
+
+    def doReadUnit(self):
+        if not self.has_unit:
+            return ''
+        return self._epics_wrapper.get_units(self._param_to_pv['readpv'])
 
 
 class EpicsDigitalMoveable(EpicsAnalogMoveable):
@@ -426,9 +431,9 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
     }
 
     parameter_overrides = {
-        # Units are set by EPICS, so cannot be changed
-        'unit': Override(mandatory=False, settable=False),
-        # Mapping values are usual read from EPICS
+        # MBBI, BI, etc. do not have units
+        'unit': Override(mandatory=False, settable=False, volatile=False),
+        # Mapping values are read from EPICS
         'mapping': Override(mandatory=False, settable=True, userparam=False)
     }
 
@@ -436,7 +441,6 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
         return {'readpv', 'writepv'}
 
     def _subscribe(self, change_callback, pvname, pvparam):
-        # Override for custom subscriptions
         return self._epics_wrapper.subscribe(pvname, pvparam, change_callback,
                                              self.connection_change_callback,
                                              as_string=True)
@@ -445,16 +449,17 @@ class EpicsMappedMoveable(MappedMoveable, EpicsMoveable):
         if mode == SIMULATION:
             return
 
+        EpicsDevice.doInit(self, mode)
+        MappedMoveable.doInit(self, mode)
+
         if session.sessiontype != POLLER:
             choices = self._epics_wrapper.get_value_choices(
-                self._get_pv_name('readpv'), self.epicstimeout)
+                self._get_pv_name('readpv'))
             # Existing mapping is fixed, so must create and replace
             new_mapping = {}
             for i, choice in enumerate(choices):
                 new_mapping[choice] = i
             self.mapping = new_mapping
-
-        MappedMoveable.doInit(self, mode)
 
     def doRead(self, maxage=0):
         return self._get_pv('readpv', as_string=True)
