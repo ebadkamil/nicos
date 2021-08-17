@@ -25,7 +25,7 @@
 
 from time import time as currenttime
 
-from nicos.core import Override, Param, oneof, pvname, status
+from nicos.core import ADMIN, Override, Param, oneof, pvname, status
 from nicos.core.device import requires
 from nicos.core.errors import ConfigurationError
 from nicos.core.mixins import CanDisable, HasOffset
@@ -198,8 +198,8 @@ class EpicsMotor(CanDisable, CanReference, HasOffset, EpicsAnalogMoveableEss,
     def doRead(self, maxage=0):
         return self._get_pv('readpv')
 
-    def doStart(self, pos):
-        self._put_pv('writepv', pos)
+    def doStart(self, value):
+        self._put_pv('writepv', value)
 
     def doReadTarget(self):
         return self._get_pv('writepv')
@@ -335,7 +335,7 @@ class HomingProtectedEpicsMotor(EpicsMotor):
     the reference run can only happen with admin rights
     """
 
-    @requires(level='admin')
+    @requires(level=ADMIN)
     def doReference(self):
         EpicsMotor.doReference(self)
 
@@ -350,9 +350,9 @@ class AbsoluteEpicsMotor(EpicsMotor):
 
 
 class EpicsMonitorMotor(PVMonitor, EpicsMotor):
-    def doStart(self, target):
-        self._put_pv('writepv', target)
-        if target != self.doRead():
+    def doStart(self, value):
+        self._put_pv('writepv', value)
+        if value != self.doRead():
             self._wait_for_start()
 
     def _on_status_change_cb(self, pvparam, value=None, char_value='', **kws):

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#  -*- coding: utf-8 -*-
 # *****************************************************************************
 # NICOS, the Networked Instrument Control System of the MLZ
 # Copyright (c) 2009-2021 by the NICOS contributors (see AUTHORS)
@@ -18,14 +18,24 @@
 # 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 # Module authors:
-#   Michele Brambilla <michele.brambilla@psi.ch>
+#   Jens Krüger <jens.krueger@frm2.tum.de>
 #
 # *****************************************************************************
-from nicos.core import Override, anytype, dictof
-from nicos.devices.generic import Switcher
+
+"""VStressi sample device."""
+
+from nicos.core import Param, intrange
+from nicos.devices.sample import Sample as BaseSample
 
 
-class NumberSwitcher(Switcher):
-    parameter_overrides = {
-        "mapping": Override(type=dictof(int, anytype)),
+class Sample(BaseSample):
+
+    parameters = {
+        'sampletype': Param('Sample type: '
+                            '1 - Abs experiment FoPra '
+                            '2 - Strain experiment FoPra E-Mod 211 '
+                            '3 - Strain experiment FoPra E-Mod 200 '
+                            '4 - fully flexible sample',
+                            type=intrange(1, 4), userparam=True,
+                            settable=True),
     }
